@@ -22,7 +22,7 @@ exports.listCampaign = async (req, res) => {
       condition.$or.push({ nameCampaign: new RegExp(keyword, "i") });
       if (typeof Number(keyword) === "number" && !isNaN(Number(keyword))) {
         condition.$or.push({ _id: Number(keyword) });
-      } 
+      }
     } else {
       condition.$or.push({});
     }
@@ -515,8 +515,8 @@ exports.getInfoAccordingChanceAndOrder = async (req, res) => {
           in_progress: {
             $sum: { $cond: [{ $eq: ["$stages", 1] }, 1, 0] },
           },
-          victory: { $sum: { $cond: [{ $eq: ["$stages", 2] }, 1, 0] } },
-          failure: { $sum: { $cond: [{ $eq: ["$stages", 3] }, 1, 0] } },
+          victory: { $sum: { $cond: [{ $eq: ["$result", 1] }, 1, 0] } },
+          failure: { $sum: { $cond: [{ $eq: ["$result", 2] }, 1, 0] } },
           total_value_chance: { $sum: "$chance_details.total" },
         },
       },

@@ -14,6 +14,7 @@ const ManagerExtension = require('../../../models/crm/manager_extension')
 const moment = require('moment');
 const axios = require('axios')
 const { log } = require("console");
+const customer_campaign = require("../../../models/crm/Campaign/customer_campaign");
 
 // hàm hiển thị chi tiết khách hàng
 exports.detail = async (req, res) => {
@@ -1184,3 +1185,46 @@ exports.GetListCustomerAnswer = async (req, res) => {
         return functions.setError(res, e.message);
     }
 }
+
+// Them chien dich cho khach hang:
+exports.addCampaignForCustomer = async (req, res) => {
+    try {
+      let { arr_cus_id, arr_campaign_id } = req.body;
+      let time = functions.convertTimestamp(Date.now());
+      if (req.user.data.type !== 1 && req.user.data.type != 2) {
+        return functions.setError(res, "Bạn không có quyền", 403);
+      }
+      if (
+        arr_cus_id &&
+        arr_cus_id.length > 0 &&
+        arr_cus_id &&
+        arr_cus_id.length > 0
+      ) {
+        for (let i = 0; i < arr_cus_id.length; i++) {
+          for (let j = 0; j < arr_campaign_id.length; j++) {
+            let new_id = await functions.getMaxIdByField(customer_campaign, "id");
+            const checkExit = await customer_campaign.findOne({
+              cus_id: arr_cus_id[i],
+              campaign_id: arr_campaign_id[j],
+              company_id: req.user.data.com_id,
+            });
+            if (!checkExit) {
+              let new_doc = new customer_campaign({
+                id: new_id,
+                cus_id: arr_cus_id[i],
+                campaign_id: arr_campaign_id[j],
+                created_at: time,
+                status: 1,
+                company_id: req.user.data.com_id,
+              });
+              await new_doc.save();
+            }
+          }
+        }
+        return functions.success(res, "Add potential into campaign success!");
+      }
+      return functions.setError(res, "Missing input value!", 400);
+    } catch (error) {
+      return functions.setError(res, error.message);
+    }
+};

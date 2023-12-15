@@ -79,60 +79,33 @@ exports.listChance = async (req, res) => {
 
     const skip = (page - 1) * pageSize;
 
-    const populateOptions = [
-      {
+    const chances = await Cus_Chance.find(searchConditions, { _id: 0 })
+      .sort({ update_at: -1 })
+      .skip(skip)
+      .limit(parseInt(pageSize))
+      .populate({
         path: "cus_id",
         model: "CRM_customer",
         options: { lean: true },
         select: "name",
         localField: "cus_id",
         foreignField: "cus_id",
-      },
-      {
+      })
+      .populate({
         path: "emp_id",
         model: Users,
         options: { lean: true },
         select: "userName idQLC",
         localField: "emp_id",
         foreignField: "idQLC",
-      },
-      // {
-      //   path: "user_id_create",
-      //   model: Users,
-      //   options: { lean: true },
-      //   select: "userName idQLC",
-      //   localField: "user_id_create",
-      //   foreignField: "idQLC",
-      // },
-      // {
-      //   path: "user_id_edit",
-      //   model: Users,
-      //   options: { lean: true },
-      //   select: "userName idQLC",
-      //   localField: "user_id_edit",
-      //   foreignField: "idQLC",
-      // },
-      // {
-      //   path: "campaign_id",
-      //   model: "CRM_Campaign",
-      //   options: { lean: true },
-      //   select: "_id nameCampaign",
-      //   localField: "campaign_id",
-      //   foreignField: "_id",
-      // },
-    ];
-
-    const chances = await Cus_Chance.find(searchConditions, { _id: 0 })
-      .skip(skip)
-      .limit(parseInt(pageSize))
-      .sort({ update_at: -1 })
+      })
       .lean();
 
-    await Promise.all(
-      populateOptions.map(async (option) => {
-        await Cus_Chance.populate(chances, option);
-      })
-    );
+    // await Promise.all(
+    //   populateOptions.map(async (option) => {
+    //     await Cus_Chance.populate(chances, option);
+    //   })
+    // );
 
     const count = await Cus_Chance.countDocuments(searchConditions);
 
@@ -188,6 +161,12 @@ exports.detailChance = async (req, res) => {
         options: { lean: true },
         select: "_id nameCampaign",
         localField: "campaign_id",
+        foreignField: "_id",
+      },
+      {
+        path: "group_commodities",
+        model: "CRM_product_groups",
+        localField: "group_commodities",
         foreignField: "_id",
       },
     ];
@@ -887,7 +866,7 @@ exports.deleteChange = async (req, res) => {
       return functions.setError(res, "Missing value", 400);
     }
   } catch (e) {
-    return functions.setError(res, e.message);
+    return functions.setError(res, e.message, 500);
   }
 };
 
@@ -1087,9 +1066,9 @@ exports.listHistoryStagesChance = async (req, res) => {
       .find({
         chance_id: Number(chance_id),
       })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(pageSize))
-      .sort({ createdAt: -1 })
       .populate({
         path: "user_edit_id",
         model: Users,
@@ -1099,8 +1078,12 @@ exports.listHistoryStagesChance = async (req, res) => {
       })
       .lean();
 
+    const total = await history_chance_stages.countDocuments({
+      chance_id: Number(chance_id),
+    });
     return functions.success(res, "Get data successfully ", {
       data: listHistory,
+      total: total,
     });
   } catch (err) {
     functions.setError(res, err);
