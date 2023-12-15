@@ -1,122 +1,151 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const crm_customer_chance = new Schema({
-   id : {
-    type : Number,
-    require : true
-   },
-   name : {
-    type : String,
-    default : ""
-   },
-   com_id : {
-    type : Number
-   },
-   cus_id : {
-    type : String,
-    default : ""
-   },
-   contact_id : {
-    type : String,
-    default : 0
-   },
-   type : {
-    type : String,
-    default :""
-   },
-   group_commodities : {
-    type : Number,
-    default : null
-   },
-   money : {
-    type : Number
-   },
-   stages : {
-    type : Number
-   },
-   success_rate : {
-    type : Number
-   },
-   expected_sales : {
-    type : String,
-    default : null
-   },
-   expected_end_date : {
-    type : Date
-   },
-   campaign_id : {
-    type : Number
-   },
-   soure : {
-    type : String
-   },
-   emp_id : {
-    type : Number
-   },
-   discount_total_rate : {
-    type : String
-   },
-   discount_total_money : {
-    type : String
-   },
-   total_money : {
-    type : Number
-   },
-   description : {
-    type : String
-   },
-   country_change : {
-    type : String
-   },
-   city_chance : {
-    type : String
-   },
-   district_chace : {
-    type : String
-   },
-   ward_chance : {
-    type : Number
-   },
-   street_chance : {
-    type : Number
-   },
-   area_code_chance : {
-    type : String
-   },
-   address_chance : {
-    type : String
-   },
-   share_all :{
-    type : String
-   },
-   user_id_create : {
-    type : Number
-   },
-   user_id_edit : {
-    type : Number
-   },
-   result : {
-    type : Number
-   },
-   reason : {
-    type : String
-   },
-   time_complete : {
-    type : String
-   },
-   delete_chance : {
-    type : Number
-   },
-   created_at : {
-    type : Date
-   },
-   update_at : {
-    type : Date
-   }
-},{
-    collection: 'CRM_customer_chance',
+const crm_chance = new Schema(
+  {
+    id: {
+      type: Number,
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    com_id: {
+      type: Number,
+      default: 0,
+    },
+    cus_id: {
+      type: Number,
+      default: 0,
+    },
+    contact_id: {
+      type: Number,
+      default: 0,
+    },
+    type: {
+      type: Number,
+      default: 0,
+    },
+    group_commodities: {
+      // Nhom hang hoa
+      type: Number,
+      default: 0,
+    },
+    chance_discount_rate: {
+      type: Number,
+      default: 0,
+    },
+    chance_discount_money: {
+      type: Number,
+      default: 0,
+    },
+    stages: {
+      // Giai doan
+      type: Number,
+      default: 1,
+    },
+    success_rate: {
+      type: Number,
+      default: 0,
+    },
+    expected_sales: {
+      type: Number,
+      default: 0,
+    },
+    expected_end_date: {
+      type: Number,
+      require: true,
+    },
+    campaign_id: {
+      type: Number,
+      default: 0,
+    },
+    source: {
+      type: Number,
+      default: 0,
+    },
+    emp_id: {
+      type: Number,
+      default: 0,
+    },
+    total_money: {
+      type: Number,
+      default: 0,
+    },
+    description: {
+      type: String,
+      default: null,
+    },
+    country_change: {
+      type: Number,
+      default: 0,
+    },
+    city_chance: {
+      type: Number,
+      default: 0,
+    },
+    district_chance: {
+      type: Number,
+      default: 0,
+    },
+    ward_chance: {
+      type: Number,
+      default: 0,
+    },
+    street_chance: {
+      type: String,
+      default: null,
+    },
+    area_code_chance: {
+      type: String,
+      default: null,
+    },
+    address_chance: {
+      type: String,
+      default: null,
+    },
+    share_all: {
+      type: Number,
+      default: 0,
+    },
+    user_id_create: {
+      type: Number,
+      default: 0,
+    },
+    user_id_edit: {
+      type: Number,
+      default: 0,
+    },
+    result: {
+      type: Number,
+      default: 0,
+    },
+    reason: {
+      type: [],
+      default: [],
+    },
+    time_complete: {
+      type: Number,
+      default: 0,
+    },
+    delete_chance: {
+      type: Number,
+      default: 0,
+    },
+    created_at: {
+      type: Number,
+      default: 0,
+    },
+    update_at: {
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    collection: "crm_chance",
     versionKey: false,
-    timestamp: true
-})
-module.exports = mongoose.model("crm_customer_chance", crm_customer_chance);
+    timestamp: true,
+  }
+);
+module.exports = mongoose.model("crm_chance", crm_chance);

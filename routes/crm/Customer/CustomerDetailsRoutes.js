@@ -45,4 +45,7 @@ router.post('/getListCustomerAnswer', formData.parse(), CustomerDetailsRoutes.Ge
 //Api lấy chi tiết ntd từ mxh
 router.post('/GetDetailCustomerSocial', functions.checkToken, formData.parse(), CustomerDetailsRoutes.GetDetailCustomerSocial)
 
+// API them chien dich cho KH
+router.post('/add-campaign-customer',functions.checkToken,formData.parse(),CustomerDetailsRoutes.addCampaignForCustomer)
+
 module.exports = router;

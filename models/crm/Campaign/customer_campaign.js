@@ -29,13 +29,13 @@ const customer_campaign = mongoose.Schema(
       default: 0,
     },
     note: {
-      type: String, 
+      type: String,
       default: null,
     },
     company_id: {
-        type: Number,
-        default: 0
-    }
+      type: Number,
+      default: 0,
+    },
   },
   {
     collection: "CRM_customer_campaign",
