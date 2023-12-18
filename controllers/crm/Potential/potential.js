@@ -484,7 +484,7 @@ exports.listPotential = async (req, res) => {
     pageSize = Number(pageSize);
     const skip = (page - 1) * pageSize;
 
-    let condition = { company_id: com_id, type: 3, emp_id: { $ne: 0 } };
+    let condition = { company_id: com_id, type: 3, is_delete: 0 };
     let condition2 = {};
 
     // tu ngay den ngay
@@ -501,7 +501,6 @@ exports.listPotential = async (req, res) => {
     if (name) condition.name = new RegExp(name, "i");
     if (user_create_id) condition.user_create_id = Number(user_create_id);
     let listPotential = await Customer.aggregate([
-      { $match: { type: 3 } },
       { $match: condition },
       {
         $lookup: {
@@ -774,8 +773,8 @@ exports.addPotentialFromFile = async (req, res) => {
             emp_id: emp_id
               ? emp_id
               : listEmp?.filter(
-                (item) => item?.userName === item?.["Nhân viên phụ trách"]
-              )[0]?.userName || null,
+                  (item) => item?.userName === item?.["Nhân viên phụ trách"]
+                )[0]?.userName || null,
           };
         }) || {};
 
