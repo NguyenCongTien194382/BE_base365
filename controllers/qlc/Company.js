@@ -14,14 +14,6 @@ const QLC_Positions = require('../../models/qlc/Positions')
 //Đăng kí tài khoản công ty
 exports.register = async (req, res) => {
   try {
-    // check ma hoa
-    // const { data } = req.body
-
-    // const decrypted = fnc.decrypt(data)
-
-    // const parsedData = JSON.parse(JSON.stringify(decrypted))
-    // console.log(parsedData)
-    // if (decrypted) {
 
     const { userName, emailContact, phoneTK, password, address, phone } =
       req.body
@@ -53,10 +45,15 @@ exports.register = async (req, res) => {
             'inForCompany.cds.com_vip': 0,
             'inForCompany.cds.com_ep_vip': 5,
             'inForCompany.cds.com_vip_time': 0,
+            'inForCompany.cds.type_timesheet': 3,
             emotion_active: false,
           })
           await user.save()
-
+          try {
+            serviceCrm.send_message(user, 'https://hungha365.com')
+          } catch (e) {
+            console.log("Lỗi gửi tin nhắn về Hằng khi đăng kí thành công", e)
+          }
           // Lưu data vào base crm
           const resoure = 3
           const status = 12
@@ -88,6 +85,7 @@ exports.register = async (req, res) => {
               type: user.type,
               com_id: user.idQLC,
               userName: user.userName,
+              type_timesheet: user.inForCompany.cds.type_timesheet || 0
             },
             '1d'
           )
@@ -105,6 +103,8 @@ exports.register = async (req, res) => {
             await comErr.deleteOne({ com_phone: phoneTK })
             serviceCrm.deleteCustomer(checkComErr.id, 'cc365err')
           }
+
+          // tự động tạo sẵn 21 chức vụ cho công ty
           try {
             const pos = [
               { level: 21, value: '1', label: 'SINH VIÊN THỰC TẬP' },
@@ -154,7 +154,6 @@ exports.register = async (req, res) => {
           } catch (e) {
             console.log('Lỗi thêm tự động 21 chức vụ', e)
           }
-
 
           // Call api tạo tài khoản base cũ chat
           await axios({
@@ -295,6 +294,8 @@ exports.register = async (req, res) => {
       }
 
       // Xử lý cập nhật crm
+
+
 
       return functions.setError(res, 'Thiếu thông tin truyền lên')
     }

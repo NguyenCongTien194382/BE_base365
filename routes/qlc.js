@@ -71,6 +71,10 @@ var ChotDonTu = require('./qlc/ChotDonTu')
 router.use('/chotDonTu', ChotDonTu)
 
 
+var SettingTypeTimeSheet = require('./qlc/SettingTypeTimeSheet')
+router.use('/settingTS', SettingTypeTimeSheet)
+
+
 router.use('/admin', Admin)
 router.use('/company', companyRouterQLC)
 router.use('/employee', EmployeeRouterQLC)

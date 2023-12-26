@@ -168,7 +168,7 @@ exports.listCom = async (req, res) => {
 
     listCondition.type = 1
     //tìm kiếm qua trang web
-    // if (fromWeb) listCondition.fromWeb = fromWeb;
+
     if (com_id) {
       listCondition.idQLC = com_id
     }
@@ -258,7 +258,7 @@ exports.listComSummary = async (req, res) => {
 
     let type = 1
     let data = []
-    let listCondition = { fromWeb: 'quanlychung' }
+    let listCondition = {}
     let checkNew1 = new Date(inputNew)
     checkNew1.setDate(checkNew1.getDate() + 1) // + 1 ngay
     let checkNew = Date.parse(checkNew1) / 1000
@@ -274,6 +274,7 @@ exports.listComSummary = async (req, res) => {
     }
 
     listCondition.type = 1
+
     //tìm kiếm qua trang web
     // if (fromWeb) listCondition.fromWeb = fromWeb;
     if (com_id) {
@@ -290,6 +291,11 @@ exports.listComSummary = async (req, res) => {
       ]
 
     if (type) listCondition.type = type
+
+    listCondition["$or"] = [
+      { fromWeb: 'quanlychung' },
+      { login_web: 'quanlychung' }
+    ]
     //tiìm kiếm công ty đang vip thì cho vip = 1
     if (findConditions == 1) {
       listCondition = {
@@ -297,6 +303,12 @@ exports.listComSummary = async (req, res) => {
           { 'inForCompany.cds.com_vip_time': { $ne: 0 } },
           { 'inForCompany.cds.com_vip_time': { $gt: functions.getTimeNow() } },
           { 'inForCompany.cds.com_vip': 1 },
+          {
+            $or: [
+              { fromWeb: 'quanlychung' },
+              { login_web: 'quanlychung' }
+            ]
+          }
         ],
       }
     }
@@ -308,7 +320,14 @@ exports.listComSummary = async (req, res) => {
           { 'inForCompany.cds.com_vip_time': { $ne: 0 } },
           { 'inForCompany.cds.com_vip_time': { $lt: functions.getTimeNow() } },
           { 'inForCompany.cds.com_vip': 1 },
+          {
+            $or: [
+              { fromWeb: 'quanlychung' },
+              { login_web: 'quanlychung' }
+            ]
+          }
         ],
+
       }
     }
 
@@ -325,6 +344,7 @@ exports.listComSummary = async (req, res) => {
       listCondition['inForCompany.cds.type_timekeeping'] = { $ne: 0 }
       listCondition['createdAt'] = { $gte: inDay }
     }
+
     data = await user
       .find(listCondition)
       .select(
@@ -335,6 +355,7 @@ exports.listComSummary = async (req, res) => {
       .sort({ _id: -1 })
       .lean()
 
+    console.log("data.length", data.length)
     for (let i = 0; i < data.length; i++) {
       const element = data[i]
       const conditions = {

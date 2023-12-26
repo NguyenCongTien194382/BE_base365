@@ -31,6 +31,10 @@ const ReceiveSalaryDay = new Schema({
         type: Date,
         default: Date.now()
     },
+    fromDx: {
+        type: Number,
+        default: null
+    }
 })
 
 module.exports = mongoose.model('QLC_ReceiveSalaryDay', ReceiveSalaryDay)

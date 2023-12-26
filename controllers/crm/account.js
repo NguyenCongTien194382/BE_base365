@@ -11,6 +11,156 @@ const Positions = require('../../models/qlc/Positions')
 const serviceCrm = require('../../services/CRM/crm')
 const CRM_site_infor = require("../../models/crm/site_infor");
 const history_update_cart = require("../../models/crm/history_update_cart")
+
+exports.transformDataCrmCart = async(req, res) => {
+    try {
+        let from = String(req.body.from);
+        let id_cus_from = String(req.body.id_cus_from);
+        let new_emp_id = Number(req.body.emp_id);
+
+
+        if (customer) {
+            await Customer.updateOne({ cus_id: Number(customer.cus_id) }, {
+                $set: {
+                    fromVip: customer.emp_id
+                }
+            })
+        }
+        return functions.success(res, "Cập nhật VIP CRM thành công");
+    } catch (error) {
+        console.log(error);
+        return functions.setError(res, error.message);
+    }
+}
+
+exports.ShowDulieuKhachHangKinhDoanh = async(req, res) => {
+    try {
+        // lấy danh sách kinh doanh. 
+        let start = Number(req.body.start);
+        let end = Number(req.body.end);
+        let response = await axios({
+            method: 'post',
+            url: 'http://210.245.108.202:3007/api/crm/account/TakeListUserFromGroupNoToken',
+            data: {
+                IdGroup: 429,
+                companyId: 10013446
+            },
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (response && response.data && response.data.data && response.data.data.listUser) {
+            // đếm số lượng khách hàng của 
+            let listUser = response.data.data.listUser;
+            let listData = [];
+            for (let i = 0; i < listUser.length; i++) {
+                let user = listUser[i];
+                let listFrom = await Customer.aggregate([{
+                        $match: {
+                            emp_id: user.idQLC,
+                            $and: [
+                                { created_at: { $gt: start } },
+                                { created_at: { $lt: end } }
+                            ]
+                        }
+                    },
+                    { $group: { _id: "$cus_from" } }
+                ]);
+                let listCount = [];
+                for (let j = 0; j < listFrom.length; j++) {
+                    let count = await Customer.countDocuments({
+                        emp_id: user.idQLC,
+                        $and: [
+                            { created_at: { $gt: start } },
+                            { created_at: { $lt: end } }
+                        ],
+                        cus_from: listFrom[j]
+                    });
+                    listCount.push(count)
+                }
+                listData.push({
+                    idQLC: user.idQLC,
+                    userName: user.userName,
+                    listFrom: listFrom,
+                    listCount
+                })
+            }
+            return res.json({
+                data: {
+                    listData
+                }
+            })
+
+        } else {
+            return functions.setError(res, "Không lấy được danh sách kinh doanh");
+        }
+
+    } catch (error) {
+        console.log(error);
+        return functions.setError(res, error.message);
+    }
+}
+
+exports.takeListCustomer = async(req, res) => {
+    try {
+        let start = Number(req.body.start);
+        let end = Number(req.body.end);
+        let from = String(req.body.from);
+        let idQLC = Number(req.body.idQLC);
+        let user = await Users.findOne({ idQLC: idQLC, type: 2 }).lean();
+        let flag = false;
+        if ((req.user.data.idQLC == idQLC) || (req.user.data.idQLC == user.inForPerson.employee.com_id)) {
+            flag = true
+        };
+        if (flag) {
+            if (user) {
+                let listCus = await Customer.find({
+                    emp_id: idQLC,
+                    cus_from: from,
+                    $and: [
+                        { created_at: { $gt: start } },
+                        { created_at: { $lt: end } }
+                    ]
+                });
+                return res.json({
+                    data: {
+                        listCus
+                    }
+                })
+            } else {
+                return functions.setError(res, "Lỗi không tồn tại user");
+            }
+        } else {
+            return functions.setError(res, "Không được phân quyến");
+        }
+
+    } catch (error) {
+        console.log(error);
+        return functions.setError(res, error.message);
+    }
+}
+
+exports.takeDuLieuChuyenGio = async(req, res) => {
+    try {
+        let group = await CRM_customer_group.findOne({ gr_id: 456 }).lean();
+        let listEmp = group.emp_id.split(",").map(Number).filter((e) => e != 0);
+        let listKD = await Users.find({ idQLC: { $in: listEmp }, type: 2 }).lean();
+        let listName = [];
+        for (let i = 0; i < listEmp.length; i++) {
+            let obj = listKD.find((e) => e.idQLC == listEmp[i]);
+            listName.push(obj.userName);
+        }
+        let idChon = listEmp[group.orderexpert];
+        let kd_check = listKD.find((e) => e.idQLC == idChon)
+        return res.json({
+            "listKD": listName,
+            "KdNext": listName[group.orderexpert],
+            "KdNextCheck": kd_check.userName
+        })
+    } catch (error) {
+        console.log(error);
+        return functions.setError(res, error.message);
+    }
+}
+
 exports.updateVip = async(req, res) => {
     try {
         let customer = await Customer.findOne({
@@ -54,7 +204,10 @@ exports.addUserToCrm = async(req, res) => {
         const district_id = req.body.district_id ? Number(req.body.district_id) : null;
         const address = req.body.address ? String(req.body.address) : null;
         const from_admin = req.body.from_admin ? Number(req.body.from_admin) : 0;
-        let chuyenvien = await serviceCrm.takeDataChuyenVien(gr_id);
+        let chuyenvien;
+        if (!req.body.emp_id) {
+            chuyenvien = await serviceCrm.takeDataChuyenVien(gr_id, com_id);
+        }
         let idChuyenVien = req.body.emp_id ? Number(req.body.emp_id) : chuyenvien.idQLC;
         let account = await serviceCrm.addCustomer(name, email, phone, idChuyenVien, id_cus_from, resoure, status, gr_id, type, link_multi, cus_from, from_admin, com_id, cit_id, district_id, address);
 
@@ -238,7 +391,120 @@ exports.TakeListUserFromGroup = async(req, res) => {
     }
 }
 
-// Lấy danh sách nhóm của 1 người 
+// lấy danh sách nhân viên mà không cần token 
+exports.TakeListUserFromGroupNoToken = async(req, res) => {
+        try {
+            let company_Id = Number(req.body.companyId)
+            let flag_com = false;
+
+
+            let IdGroup = Number(req.body.IdGroup);
+            let data = {};
+            let Group = await CRM_customer_group.findOne({
+                gr_id: IdGroup
+            }).lean();
+            if (Group) {
+                let listEmId = Group.emp_id.split(",");
+                let listTempt = [];
+                for (let i = 0; i < listEmId.length; i++) {
+                    if (listEmId[i]) {
+                        if (!isNaN(Number(listEmId[i]))) {
+                            listTempt.push(Number(listEmId[i]));
+                        }
+                    }
+                };
+                listEmId = listTempt;
+
+                if (Group.group_parent == 0) {
+                    let listChild = await CRM_customer_group.find({
+                        group_parent: IdGroup
+                    }, {
+                        emp_id: 1
+                    }).lean();
+                    for (let i = 0; i < listChild.length; i++) {
+                        let listEmId_child = listChild[i].emp_id.split(",");
+                        for (let j = 0; j < listEmId_child.length; j++) {
+                            if (listEmId_child[i]) {
+                                listEmId.push(Number(listEmId_child[j]));
+                            }
+                        };
+                    };
+                };
+                listEmId = [...new Set(listEmId)];
+                listEmId = listEmId.filter((e) => e > 1000000);
+                let history = await history_update_cart.find({ emp_id: { $in: listEmId } }).sort({ created_at: -1 }).lean();
+
+                let listUser = await Users.aggregate([{
+                        $match: {
+                            idQLC: { $in: listEmId },
+                            type: 2
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'QLC_OrganizeDetail',
+                            localField: 'inForPerson.employee.organizeDetailId',
+                            foreignField: 'id',
+                            as: 'organizeDetail',
+                        },
+                    },
+                    {
+                        $unwind: {
+                            path: '$organizeDetail',
+                            preserveNullAndEmptyArrays: true,
+                        },
+                    },
+                    {
+                        $lookup: {
+                            from: 'QLC_Positions',
+                            localField: 'inForPerson.employee.position_id',
+                            foreignField: 'id',
+                            pipeline: [{
+                                $match: {
+                                    comId: company_Id
+                                }
+                            }],
+                            as: 'positions',
+                        },
+                    },
+                    {
+                        $unwind: {
+                            path: '$positions',
+                            preserveNullAndEmptyArrays: true,
+                        },
+                    },
+                    {
+                        $project: {
+                            idQLC: 1,
+                            userName: 1,
+                            position: "$positions.positionName",
+                            organization: "$organizeDetail.organizeDetailName",
+                            phoneTK: 1,
+                            email: 1
+                        }
+                    }
+                ]);
+                const key = 'idQLC';
+                listUser = [...new Map(listUser.map((item) => [item[key], item])).values()];
+                let listTempt2 = [];
+                for (let i = 0; i < listUser.length; i++) {
+                    let obj = listUser[i];
+                    let check = history.find((e) => e.emp_id == obj.idQLC);
+                    if (check) {
+                        listTempt2.push({...obj, date_add: check.created_at })
+                    } else {
+                        listTempt2.push(obj);
+                    }
+                }
+                data.listUser = listTempt2;
+            }
+            return functions.success(res, "Danh sách nhân viên trong giỏ", data);
+        } catch (error) {
+            console.log(error);
+            return functions.setError(res, error.message);
+        }
+    }
+    // Lấy danh sách nhóm của 1 người 
 exports.TakeListGroupOfUser = async(req, res) => {
     try {
         let IdCRM = Number(req.body.IdCRM)
@@ -314,8 +580,9 @@ exports.deleteCart = async(req, res) => {
                     // check từng khách hàng => lấy thông tin từng nhóm => random số thứ tự và loại người đấy ra
                     // group_id
                     let customer = listCus[i];
-                    let group = await CRM_customer_group.find({ gr_id: Number(customer.group_id) });
+                    let group = await CRM_customer_group.findOne({ gr_id: Number(customer.group_id) });
                     if (group) {
+                        console.log(group);
                         let listChuyenVienId = group.emp_id.split(",").map(Number);
                         listChuyenVienId = listChuyenVienId.filter((e) => (e > 1000000) && (e != idCRM));
                         if (listChuyenVienId.length) {
@@ -345,7 +612,7 @@ exports.deleteCart = async(req, res) => {
                             // chuyển trên admin 
                             // chuyển trong tìm việc
                             if ((listCus[i].cus_from == "tv365") && (listCus[i].type == 2)) {
-                                functions.tranferGioElastic(Number(listCus[i].id_cus_from));
+
                                 let admin = await AdminUser.findOne({ emp_id: id_chuyenvien }).lean(lean);
                                 await Users.updateMany({
                                     idTimViec365: Number(listCus[i].id_cus_from)
@@ -354,6 +621,7 @@ exports.deleteCart = async(req, res) => {
                                         "inForCompany.usc_kd": admin.adm_bophan
                                     }
                                 });
+                                functions.tranferGioElastic(Number(listCus[i].id_cus_from));
                             } else {
                                 // chuyển ngoai site vệ tinh 
                                 const check_customer = listCus[i];

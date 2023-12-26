@@ -12,6 +12,8 @@ const TimeSheet = require('../../models/qlc/TimeSheets')
 const BasicSal = require('../../models/Tinhluong/Tinhluong365SalaryBasic')
 const Dexuat = require('../../models/Vanthu/de_xuat')
 
+const SettingConfirmTimeSheet = require("../../models/qlc/SettingConfirmTimeSheet")
+
 //dang k� t�i kho?n nh�n vi�n
 exports.register = async (req, res) => {
   try {
@@ -24,7 +26,7 @@ exports.register = async (req, res) => {
     // const parsedData = JSON.parse(JSON.stringify(decrypted))
     // console.log(parsedData)
     // if (parsedData) {
-    const {
+    let {
       userName,
       emailContact,
       phoneTK,
@@ -48,7 +50,11 @@ exports.register = async (req, res) => {
       listOrganizeDetailId,
       organizeDetailId,
     } = req.body
-    console.log(req.body)
+    if (listOrganizeDetailId) {
+      if (!Array.isArray(listOrganizeDetailId)) listOrganizeDetailId = JSON.parse(listOrganizeDetailId)
+    }
+
+
     const createdAt = new Date()
     if ((userName && password && com_id && address && phoneTK) !== undefined) {
       let checkPhone = await functions.checkPhoneNumber(phoneTK)
@@ -60,7 +66,7 @@ exports.register = async (req, res) => {
         let MaxId = await functions.getMaxUserID('user')
         let _id = MaxId._id
 
-        console.log(_id)
+
         if (!user) {
           const user = new Users({
             _id: _id,
@@ -102,6 +108,7 @@ exports.register = async (req, res) => {
 
           fnc.settingConfirm(user)
           fnc.settingIPApp(user)
+
 
           const token = await functions.createToken(
             {
@@ -397,9 +404,21 @@ exports.login = async (req, res, next) => {
       // }
 
       if (user) {
+        let type_timesheet = 0
         let com_id = 0
         if (user.type === 1) {
+          if (user.fromWeb != 'quanlychung' && !user.login_web)
+            await Users.updateOne(
+              {
+                idQLC: user.idQLC,
+                type: 1
+              },
+              {
+                login_web: 'quanlychung'
+              }
+            )
           com_id = user.idQLC
+          type_timesheet = user.inForCompany.cds.type_timesheet || 0
         } else if (user.type == 2 && user.inForPerson != null) {
           com_id = user.inForPerson.employee.com_id
         }
@@ -415,6 +434,7 @@ exports.login = async (req, res, next) => {
             type: user.type,
             com_id: com_id,
             userName: user.userName,
+            type_timesheet: type_timesheet
           },
           '1d'
         )
@@ -1127,8 +1147,8 @@ exports.getTokenFromRfToken = async (req, res) => {
     const decoded = parseJwt(rf_token)
 
     if (!decoded) return functions.setError(res, 'Token không hợp lệ')
-
-    const userId = decoded.data.userId
+    let userId = 0
+    if (decoded && decoded.data) userId = decoded.data.userId
 
     if (userId) {
       const user = await Users.findOne({

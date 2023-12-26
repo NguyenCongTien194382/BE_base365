@@ -16,6 +16,9 @@ const Position = require('../../../models/qlc/Positions');
 const ManagerExtension = require('../../../models/crm/manager_extension');
 const AdminUser = require('../../../models/Timviec365/Admin/AdminUser');
 const ManageNghiPhep = require("../../../models/ManageNghiPhep");
+const DeXuatCongDiemModel = require("../../../models/crm/DeXuatCongDiem");
+const BangDiemCrm = require("../../../models/crm/BangDiemCrm");
+const HistoryPointCrm = require("../../../models/crm/HistoryPointCrm");
 
 // hàm thêm mới khách hang
 exports.addCustomer = async(req, res) => {
@@ -296,97 +299,218 @@ exports.addCustomer = async(req, res) => {
 };
 
 const takeVipUser = async(idQLC) => {
-        try {
-            // console.log("Chuyển giỏ của", idQLC)
-            let time = new Date().getTime();
-            let dataNghi = await ManageNghiPhep.find({
-                idFrom: Number(idQLC),
-                $and: [{
-                    from: {
-                        $lte: time
-                    }
-                }, {
-                    end: {
-                        $gte: time
-                    }
-                }]
-            });
-            if (dataNghi.length == 0) {
-                // console.log("Đang đi làm", idQLC)
-                // kiểm tra đơn nghỉ từ khi áp dụng phần mềm 
-                let listDexuat = await ManageNghiPhep.find({
-                    idFrom: Number(idQLC),
-                });
-                if (listDexuat.length) { // từng có đề xuất 
-                    await Customer.updateMany({
-                        fromVip: idQLC
+    try {
+        // console.log("Chuyển giỏ của", idQLC)
+        let time = new Date().getTime();
+        // let dataNghi = await ManageNghiPhep.find({
+        //     idFrom: Number(idQLC),
+        //     $and: [{
+        //         from: {
+        //             $lte: time
+        //         }
+        //     }, {
+        //         end: {
+        //             $gte: time
+        //         }
+        //     }]
+        // });
+        // if (dataNghi.length == 0) {
+        //     // console.log("Đang đi làm", idQLC)
+        //     // kiểm tra đơn nghỉ từ khi áp dụng phần mềm 
+        //     let listDexuat = await ManageNghiPhep.find({
+        //         idFrom: Number(idQLC),
+        //     });
+        //     if (listDexuat.length) { // từng có đề xuất 
+
+        //     }
+        // }
+        console.log("Cập nhật danh sách khách VIP", idQLC)
+
+        // khách VIP hoạt động trong 1 tuần gần nhất 
+        let time2 = new Date().getTime() / 1000 - 3600 * 168;
+        let lisCusVipBeTranfer = await Customer.find({
+            fromVip: idQLC,
+            // updated_at: { $gte: time2 },
+            emp_id: { $ne: idQLC }
+        }).lean();
+
+        console.log("Danh sach khach chua duoc chuyen", lisCusVipBeTranfer)
+
+        // chỉ riêng với tìm việc
+        let admin = await AdminUser.findOne({ emp_id: idQLC }).lean();
+        if (admin) {
+            console.log("Co admin", admin.adm_bophan)
+            let usc_kd = admin.adm_bophan;
+            for (let i = 0; i < lisCusVipBeTranfer.length; i++) {
+                let obj = lisCusVipBeTranfer[i];
+                if (obj.cus_from == "tv365") {
+                    console.log("Chuyen ve gio tren timviec", obj.id_cus_from)
+                    await User.updateOne({
+                        type: 1,
+                        idTimViec365: Number(obj.id_cus_from)
                     }, {
                         $set: {
-                            emp_id: idQLC
+                            "inForCompany.usc_kd": usc_kd
                         }
                     });
+                    await functions.tranferGioElastic(Number(obj.id_cus_from));
 
-                    // khách VIP hoạt động trong 1 tuần gần nhất 
-                    let time2 = new Date().getTime() / 1000 - 3600 * 168;
-                    let lisCusVipBeTranfer = await Customer.find({
-                        fromVip: idQLC,
-                        updated_at: { $gte: time2 }
-                        // emp_id: idQLC
-                    }).lean();
-
-                    // chỉ riêng với tìm việc
-                    let admin = await AdminUser.findOne({ emp_id: idQLC }).lean();
-                    if (admin) {
-                        let usc_kd = admin.adm_bophan;
-                        for (let i = 0; i < lisCusVipBeTranfer.length; i++) {
-                            let obj = lisCusVipBeTranfer[i];
-                            if (obj.cus_from == "tv365") {
-                                await User.updateOne({
-                                    type: 1,
-                                    idTimViec365: Number(obj.id_cus_from)
-                                }, {
-                                    $set: {
-                                        "inForCompany.usc_kd": usc_kd
-                                    }
-                                });
-                                await functions.tranferGioElastic(Number(obj.id_cus_from));
-
-                            }
-                        }
-                    };
-
-
-                    // site vệ tinh 
-                    // gọi chuyển giỏ sang vệ tinh
-                    for (let i = 0; i < lisCusVipBeTranfer.length; i++) {
-                        const check_customer = lisCusVipBeTranfer[i];
-                        let site_infor = await CRM_site_infor.findOne({
-                            cus_from: String(check_customer.cus_from)
-                        })
-                        if (site_infor) {
-                            await axios({
-                                method: 'post',
-                                url: site_infor.link_update_cart,
-                                data: {
-                                    cus_from_id: check_customer.id_cus_from,
-                                    emp_id: check_customer.emp_id,
-                                    userName: check_customer.name,
-                                    phone: check_customer.phone_number,
-                                    email: check_customer.email,
-                                    address: check_customer.address,
-                                },
-                                headers: { 'Content-Type': 'multipart/form-data' },
-                            });
-                        }
-                    }
                 }
             }
-        } catch (e) {
-            console.log("takeVipUser", e);
-            return false;
-        }
+        };
+
+        // site vệ tinh 
+        // tạm dừng do bên Văn Long đẩy sang linh tinh 
+        // gọi chuyển giỏ sang vệ tinh
+        for (let i = 0; i < lisCusVipBeTranfer.length; i++) {
+            const check_customer = lisCusVipBeTranfer[i];
+            let site_infor = await CRM_site_infor.findOne({
+                cus_from: String(check_customer.cus_from)
+            })
+            if (site_infor) {
+                await axios({
+                    method: 'post',
+                    url: site_infor.link_update_cart,
+                    data: {
+                        cus_from_id: check_customer.id_cus_from,
+                        emp_id: check_customer.emp_id,
+                        userName: check_customer.name,
+                        phone: check_customer.phone_number,
+                        email: check_customer.email,
+                        address: check_customer.address,
+                    },
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+            }
+        };
+
+        await Customer.updateMany({
+            fromVip: idQLC,
+            emp_id: { $ne: idQLC }
+        }, {
+            $set: {
+                emp_id: idQLC
+            }
+        });
+    } catch (e) {
+        console.log("takeVipUser", e);
+        return false;
     }
-    //Hien thi
+}
+
+// Đề xuất cộng điểm CRM 
+exports.DexuatCongDiem = async(req, res) => {
+    try {
+        let idCrm = Number(req.body.idCrm);
+        let point = Number(req.body.point);
+        let Kinhdoanh = await User.findOne({ idQLC: idCrm, type: 2 }).lean();
+        let message = `Đồng chí ${Kinhdoanh.userName} đề xuất cộng ${point} điểm cho ngày ${new Date().getDate()}-${new Date().getMonth()+1}-${new Date().getFullYear()}\nChi tiết tại: https://hungha365.com/crm
+                      `;
+        let newmodel = new DeXuatCongDiemModel({
+            creator: idCrm,
+            point,
+            company: Kinhdoanh.inForPerson.employee.com_id
+        });
+        await newmodel.save();
+        await functions.sendMessageDexuatDiemCrm(1192, message)
+        return res.json({
+            data: {
+                message: "Gửi đề xuất thành công"
+            }
+        })
+
+    } catch (e) {
+        console.log(e);
+        return functions.setError(res, "Lỗi api");
+    }
+};
+
+// api duyệt đề xuất cộng điểm
+exports.DuyetDexuatCongDiem = async(req, res) => {
+    try {
+        const IdDeXuat = String(req.body.IdDeXuat);
+        let dexuat = await DeXuatCongDiemModel.findOne({ _id: IdDeXuat }).lean();
+        let com_id = dexuat.company;
+        if (req.user.data.idQLC == com_id) {
+            if (dexuat.status == 0) {
+                let creator = await User.findOne({ idQLC: Number(dexuat.creator) }).lean();
+                let time = new Date(1000 * Number(dexuat.createdAt));
+                let message = `Đề xuất cộng ${dexuat.point} điểm của ${creator.userName} cho ngày ${time.getDate()}-${time.getMonth()+1}-${time.getFullYear()} đã được duyệt/nChi tiết tại: https://hungha365.com/crm`
+                functions.sendMessageDexuatDiemCrm(1192, message);
+                functions.sendMessageToChuyenVien(creator._id, message);
+
+                // cập nhật trạng thái đề xuất 
+                await DeXuatCongDiemModel.updateOne({
+                    _id: IdDeXuat
+                }, {
+                    $set: {
+                        status: 1
+                    }
+                })
+
+                // cộng điểm cho chuyên viên
+                let tt_diem = await BangDiemCrm.findOne({
+                    idKinhDoanh: Number(dexuat.creator)
+                });
+                if (tt_diem) {
+                    let newpoint = tt_diem.point + dexuat.point;
+                    await BangDiemCrm.updateOne({
+                        idKinhDoanh: Number(dexuat.creator)
+                    }, {
+                        $set: {
+                            point: newpoint,
+                            createdAt: new Date().getTime() / 1000,
+                            updatedAt: new Date().getTime() / 1000
+                        }
+                    })
+                } else {
+                    let newBangDiem = new BangDiemCrm({
+                        idKinhDoanh: Number(dexuat.creator),
+                        point: dexuat.point
+                    });
+                    await newBangDiem.save();
+                }
+
+                // Lưu lịch sử cộng điểm 
+                let newHistory = new HistoryPointCrm({
+                    emp_id: Number(dexuat.creator),
+                    type: "ADD"
+                });
+                await newHistory.save();
+
+                return res.json({
+                    data: {
+                        message: "Duyệt đề xuất thành công"
+                    }
+                })
+            } else {
+                return functions.setError(res, "Đề xuất đã được duyệt");
+            }
+
+        } else {
+            return functions.setError(res, "Bạn không được cấp quyền");
+        }
+
+    } catch (e) {
+        console.log(e);
+        return functions.setError(res, "Lỗi api");
+    }
+};
+
+// api xóa đề xuất 
+
+// api lấy danh sách đề xuất, bộ lọc theo ngày, phân trang 
+
+// api lấy danh sách điểm 
+
+// api lấy lịch sử điểm. 
+
+// api lấy danh sách ứng viên, tìm kiếm ứng viên 
+
+// làm theo cơ chế che, dùng điểm để mở , dùng điểm để xuất excel. 
+
+
+//Hien thi
 exports.showKH = async(req, res) => {
     try {
         let { page, perPage, keyword, status, resoure, emp_id, time_s, time_e, group_id, create_at_s, create_at_e } = req.body; // Số lượng giá trị hiển thị trên mỗi trang
@@ -970,8 +1094,192 @@ exports.addCustomerVT = async(req, res) => {
     }
 }
 
+const CheckNghiPhepChuyenVien = async(idChuyenVien, com_id) => {
+    try {
+        console.log("CheckNghiPhepChuyenVien", idChuyenVien, com_id);
+        let response = await axios({
+            method: 'post',
+            url: 'https://api.timviec365.vn/api/qlc/shift/list_shift_user_new',
+            data: {
+                u_id: idChuyenVien,
+                c_id: Number(com_id)
+            },
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (response && response.data && response.data.data && response.data.data.shift && response.data.data.shift.length) {
+            console.log("Có lịch làm việc", idChuyenVien, com_id)
+            return true;
+        } else {
+            console.log("Không có lịch làm việc", idChuyenVien, com_id)
+            return false;
+        }
+    } catch (e) {
+        console.log("Lỗi CheckNghiPhepChuyenVien", e, idChuyenVien, com_id)
+        return false;
+    }
+}
+
+const CheckNghiPhep = async(customer) => {
+    try {
+        // máy chủ tính theo giờ GMT , bỏ qua ngày chủ nhật không chuyển 
+        let day = new Date().getDay();
+        if (day != 0) {
+            let check = await CheckNghiPhepChuyenVien(Number(customer.emp_id), Number(customer.company_id));
+            if (!check) { // nếu không có lịch làm việc
+                // kiểm tra đơn xin 
+                let time = new Date().getTime();
+                let dataNghi = await ManageNghiPhep.find({
+                    idFrom: Number(customer.emp_id),
+                    $and: [{
+                        from: {
+                            $lte: time
+                        }
+                    }, {
+                        end: {
+                            $gte: time
+                        }
+                    }]
+                });
+                let message = `Khách hàng với ID CRM: ${customer.cus_id},
+                                    ID: ${customer.id_cus_from}
+                                    email: ${customer.email },
+                                    số điện thoại: ${customer.phone_number},
+                                    đã được chuyển tới giỏ của bạn
+                                    vào lúc ${new Date().getHours()}:${new Date().getMinutes()}
+                                    `
+                if (dataNghi.length) { // nếu có chỉ định 
+                    console.log("Có đơn chỉ định");
+                    await Customer.updateOne({
+                        cus_id: customer.cus_id
+                    }, {
+                        $set: {
+                            emp_id: Number(dataNghi[0].idTo)
+                        }
+                    });
+
+                    // gọi chuyển giỏ sang vệ tinh 
+                    let site_infor = await CRM_site_infor.findOne({
+                        cus_from: String(customer.cus_from)
+                    })
+                    if (site_infor) {
+                        await axios({
+                            method: 'post',
+                            url: site_infor.link_update_cart,
+                            data: {
+                                cus_from_id: customer.id_cus_from,
+                                emp_id: customer.emp_id,
+                                userName: customer.name,
+                                phone: customer.phone_number,
+                                email: customer.email,
+                                address: customer.address,
+                            },
+                            headers: { 'Content-Type': 'multipart/form-data' },
+                        });
+                    };
+                    functions.sendMessageToChuyenVienQlc(Number(dataNghi[0].idTo), message)
+                } else { // không có chỉ định 
+                    console.log("Không có đơn chỉ định")
+                    let group_id = Number(customer.group_id);
+                    let group = await NhomKH.findOne({ gr_id: Number(group_id) }).lean();
+                    let list_emp_id = group.emp_id.split(",").map(Number).filter((e) => (e != 0) && (!isNaN(e)));
+                    list_emp_id = list_emp_id.filter((e) => e != Number(customer.emp_id))
+                    let stt = 0;
+                    if (group.orderexpert) {
+                        stt = Number(group.orderexpert)
+                    };
+
+                    let chuyenvienChoose = list_emp_id[stt];
+                    let flag = true;
+                    if (!list_emp_id[stt]) {
+                        stt = stt + 1;
+                    };
+                    if (stt > (list_emp_id.length - 1)) {
+                        stt = 0;
+                    };
+                    let stone = stt;
+
+                    // if (stt == 0) {
+                    //     stone = listUser.length - 1
+                    // };
+                    let day = new Date().getDay();
+                    if (day != 0) {
+
+                        while (flag && (stt != stone)) {
+                            if (!list_emp_id[stt]) {
+                                stt = stt + 1;
+                            };
+                            let check = await CheckNghiPhepChuyenVien(list_emp_id[stt].idQLC, Number(customer.company_id)); // nếu không có lịch làm việc thì chia đều 
+                            if (check) {
+                                flag = false;
+                            } else {
+                                stt = stt + 1;
+                                if (stt > (list_emp_id.length - 1)) {
+                                    stt = 0;
+                                };
+                            }
+                        };
+
+                        chuyenvienChoose = list_emp_id[stt];
+                        // nếu tìm được thì mới chuyển giỏ 
+                        if (chuyenvienChoose) {
+                            await Customer.updateOne({
+                                cus_id: customer.cus_id
+                            }, {
+                                $set: {
+                                    emp_id: Number(chuyenvienChoose)
+                                }
+                            });
+                            // gọi chuyển giỏ sang vệ tinh 
+                            let site_infor = await CRM_site_infor.findOne({
+                                cus_from: String(customer.cus_from)
+                            });
+
+                            if (site_infor) {
+                                await axios({
+                                    method: 'post',
+                                    url: site_infor.link_update_cart,
+                                    data: {
+                                        cus_from_id: customer.id_cus_from,
+                                        emp_id: chuyenvienChoose,
+                                        userName: customer.name,
+                                        phone: customer.phone_number,
+                                        email: customer.email,
+                                        address: customer.address,
+                                    },
+                                    headers: { 'Content-Type': 'multipart/form-data' },
+                                });
+
+                            };
+
+                            functions.sendMessageToChuyenVienQlc(Number(chuyenvienChoose), message)
+
+                            // cập nhât số thứ tự mới để chia giỏ
+                            let new_stt = stt + 1;
+                            if (new_stt > (list_emp_id.length - 1)) {
+                                new_stt = 0;
+                            };
+
+
+                            await NhomKH.updateMany({
+                                gr_id: Number(group_id)
+                            }, {
+                                $set: {
+                                    orderexpert: new_stt
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
 exports.editCustomerVT = async(req, res) => {
     try {
+        console.log("editCustomerVT", req.body);
         let name = req.body.name,
             email = req.body.email,
             phone = req.body.phone,
@@ -987,53 +1295,9 @@ exports.editCustomerVT = async(req, res) => {
             description = req.body.description,
             id_cus_from = Number(req.body.id_cus_from) || 0;
         let data = { updated_at: functions.getTimeNow() };
-        const check_customer = await Customer.findOne({ id_cus_from, cus_from: from }, { group_id: 1 })
+        const check_customer = await Customer.findOne({ id_cus_from, cus_from: from }).lean();
 
-        // check nghi phep => chuyển giỏ dưới CRM.
-        let time = new Date().getTime();
-        if (check_customer) {
-            let dataNghi = await ManageNghiPhep.find({
-                idFrom: Number(check_customer.emp_id),
-                $and: [{
-                    from: {
-                        $lte: time
-                    }
-                }, {
-                    end: {
-                        $gte: time
-                    }
-                }]
-            });
-            if (dataNghi.length) {
-                await Customer.updateOne({
-                    cus_id: check_customer.cus_id
-                }, {
-                    $set: {
-                        emp_id: Number(dataNghi[0].idFrom)
-                    }
-                });
-
-                // gọi chuyển giỏ sang vệ tinh 
-                let site_infor = await CRM_site_infor.findOne({
-                    cus_from: String(check_customer.cus_from)
-                })
-                if (site_infor) {
-                    await axios({
-                        method: 'post',
-                        url: site_infor.link_update_cart,
-                        data: {
-                            cus_from_id: check_customer.id_cus_from,
-                            emp_id: check_customer.emp_id,
-                            userName: check_customer.name,
-                            phone: check_customer.phone_number,
-                            email: check_customer.email,
-                            address: check_customer.address,
-                        },
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                    });
-                }
-            }
-        }
+        CheckNghiPhep(check_customer);
 
 
         if (name) data.name = name;
@@ -1041,7 +1305,7 @@ exports.editCustomerVT = async(req, res) => {
         if (phone) data.phone_number = phone;
         if (resoure) data.resoure = resoure;
         if (status) data.status = status;
-        if (group && check_customer.group_id !== 467) data.group_id = group;
+        if (group && check_customer && (check_customer.group_id !== 467)) data.group_id = group;
         if (ep_id) data.ep_id = ep_id;
         if (city) data.city = city;
         if (district) data.district = district;
@@ -1107,11 +1371,42 @@ exports.addCustomerSocial = async(req, res) => {
     try {
         const data = req.body.data
         const createDate = functions.getTimeNow();
+        // Lấy thời gian hiện tại
+        const currentDate = new Date();
+        // Đặt giờ, phút, giây và mili giây thành 0
+        currentDate.setHours(0, 0, 0, 0);
+        // Lấy thời điểm đầu tiên của ngày
+        const startTime = Math.floor(currentDate.getTime() / 1000)
 
         //Lấy ds kd đổ ntd về
         const group = await NhomKH.findOne({ gr_id: 452 })
-        const list_emp_id = group.emp_id.split(',')
-        const arr_id_KD = list_emp_id.map(emp_id => Number(emp_id))
+        const list_emp_id = group.emp_id.replaceAll(' ').split(',')
+            // const arr_id_KD = list_emp_id.map(emp_id => Number(emp_id))
+        let arr_id_KD = []
+        for (let i = 0; i < list_emp_id.length; i++) {
+            if (list_emp_id[i] !== '') {
+                {
+                    arr_id_KD.push(Number(list_emp_id[i]))
+                }
+            }
+        }
+        //Check KD có đi làm không
+        let list_temp = [];
+        for (let i = 0; i < arr_id_KD.length; i++) {
+            let response = await axios({
+                method: 'post',
+                url: 'https://api.timviec365.vn/api/qlc/shift/list_shift_user_new',
+                data: {
+                    u_id: arr_id_KD[i],
+                    c_id: Number(group.company_id)
+                },
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            if (response && response.data && response.data.data && response.data.data.shift && response.data.data.shift.length) {
+                list_temp.push(arr_id_KD[i]);
+            }
+        }
+        arr_id_KD = list_temp
             //Lấy kd đã nhận ndt cuối cùng
         const lastKD = await Customer.find({ resoure: 1 }, { emp_id: 1, created_at: 1 }).sort({ created_at: -1 }).limit(1).lean()
             //Lấy vị trí của last KD trong ds KD
@@ -1128,7 +1423,7 @@ exports.addCustomerSocial = async(req, res) => {
                 email = data[i].list_email[0]
             }
             //Check ntd này đã thuộc KD nào chưa
-            const check_ntd = await Customer.findOne({ phone_number: phone_number, email: email, resoure: 1 }, { emp_id: 1, cus_id: 1, created_at: 1 }).sort({ created_at: -1 })
+            const check_ntd = await Customer.findOne({ phone_number: phone_number, email: email, resoure: 1 }, { emp_id: 1, cus_id: 1, created_at: 1, list_post: 1 }).sort({ created_at: -1 })
                 //Chưa có ntd thì thêm mới ntd
             if (!check_ntd) {
                 //Quay vòng trở lại
@@ -1172,20 +1467,34 @@ exports.addCustomerSocial = async(req, res) => {
                 }
             } else { // Có rồi thì lưu thêm bài viết, cập nhật lại nhóm khách hàng
                 const post = {
-                    link_user_post: data[i].link_user_post,
-                    description: data[i].text || '',
-                    created_at: createDate
-                }
-                await Customer.updateOne({ cus_id: check_ntd.cus_id }, {
-                    $push: { list_post: post },
-                    $set: {
-                        group_id: 455,
-                        link: `https://hungha365.com/crm/nha-tuyen-dung/detail/${check_ntd.cus_id}`,
-                        description: data[i].text || '', //bài đăng
-                        link_user_post: data[i].link_user_post, //link fb người đăng bài
-                        updated_at: createDate,
+                        link_user_post: data[i].link_user_post,
+                        description: data[i].text || '',
+                        created_at: createDate
                     }
-                })
+                    //Check xem trong ngày đã đăng tin mới chưa
+                const check_post = check_ntd.list_post.find(post => post.created_at > startTime)
+                if (check_post) {
+                    await Customer.updateOne({ cus_id: check_ntd.cus_id }, {
+                        $push: { list_post: post },
+                        $set: {
+                            link: `https://hungha365.com/crm/nha-tuyen-dung/detail/${check_ntd.cus_id}`,
+                            description: data[i].text || '', //bài đăng
+                            link_user_post: data[i].link_user_post, //link fb người đăng bài
+                            updated_at: createDate,
+                        }
+                    })
+                } else {
+                    await Customer.updateOne({ cus_id: check_ntd.cus_id }, {
+                        $push: { list_post: post },
+                        $set: {
+                            group_id: 455,
+                            link: `https://hungha365.com/crm/nha-tuyen-dung/detail/${check_ntd.cus_id}`,
+                            description: data[i].text || '', //bài đăng
+                            link_user_post: data[i].link_user_post, //link fb người đăng bài
+                            updated_at: createDate,
+                        }
+                    })
+                }
             }
         }
 
@@ -1204,6 +1513,12 @@ exports.addCustomerDigXSocial = async(req, res) => {
             COM_ID = 10013446
         const data = req.body.data
         const createDate = functions.getTimeNow();
+        // Lấy thời gian hiện tại
+        const currentDate = new Date();
+        // Đặt giờ, phút, giây và mili giây thành 0
+        currentDate.setHours(0, 0, 0, 0);
+        // Lấy thời điểm đầu tiên của ngày
+        const startTime = Math.floor(currentDate.getTime() / 1000)
 
         for (let i = 0; i < data.length; i++) {
             let phone_number, email
@@ -1214,7 +1529,7 @@ exports.addCustomerDigXSocial = async(req, res) => {
                 email = data[i].list_email[0]
             }
             if (phone_number || email) {
-                const check_ntd = await Customer.findOne({ phone_number: phone_number, email: email, resoure: 1 }, { emp_id: 1, cus_id: 1, created_at: 1 }).sort({ created_at: -1 })
+                const check_ntd = await Customer.findOne({ phone_number: phone_number, email: email, resoure: 1 }, { emp_id: 1, cus_id: 1, created_at: 1, list_post: 1 }).sort({ created_at: -1 })
                 if (!check_ntd) {
                     let maxID = await customerService.getMaxIDCRM(Customer);
                     let createCustomer = await Customer.create({
@@ -1245,20 +1560,34 @@ exports.addCustomerDigXSocial = async(req, res) => {
                     }
                 } else {
                     const post = {
-                        link_user_post: data[i].link_user_post,
-                        description: data[i].text || '',
-                        created_at: createDate
-                    }
-                    await Customer.updateOne({ cus_id: check_ntd.cus_id }, {
-                        $push: { list_post: post },
-                        $set: {
-                            group_id: 455,
-                            link: `https://hungha365.com/crm/nha-tuyen-dung/detail/${check_ntd.cus_id}`,
-                            description: data[i].text || '', //bài đăng
-                            link_user_post: data[i].link_user_post, //link fb người đăng bài
-                            updated_at: createDate,
+                            link_user_post: data[i].link_user_post,
+                            description: data[i].text || '',
+                            created_at: createDate
                         }
-                    })
+                        //Check xem trong ngày đã đăng tin mới chưa
+                    const check_post = check_ntd.list_post.find(post => post.created_at > startTime)
+                    if (check_post) {
+                        await Customer.updateOne({ cus_id: check_ntd.cus_id }, {
+                            $push: { list_post: post },
+                            $set: {
+                                link: `https://hungha365.com/crm/nha-tuyen-dung/detail/${check_ntd.cus_id}`,
+                                description: data[i].text || '', //bài đăng
+                                link_user_post: data[i].link_user_post, //link fb người đăng bài
+                                updated_at: createDate,
+                            }
+                        })
+                    } else {
+                        await Customer.updateOne({ cus_id: check_ntd.cus_id }, {
+                            $push: { list_post: post },
+                            $set: {
+                                group_id: 455,
+                                link: `https://hungha365.com/crm/nha-tuyen-dung/detail/${check_ntd.cus_id}`,
+                                description: data[i].text || '', //bài đăng
+                                link_user_post: data[i].link_user_post, //link fb người đăng bài
+                                updated_at: createDate,
+                            }
+                        })
+                    }
                 }
             }
         }
@@ -1273,12 +1602,41 @@ exports.addCustomerChoTot = async(req, res) => {
     try {
         const data = req.body.data
         const createDate = functions.getTimeNow();
+        // Lấy thời gian hiện tại
+        const currentDate = new Date();
+        // Đặt giờ, phút, giây và mili giây thành 0
+        currentDate.setHours(0, 0, 0, 0);
+        // Lấy thời điểm đầu tiên của ngày
+        const startTime = Math.floor(currentDate.getTime() / 1000)
 
         //Lấy ds kd đổ ntd về
         const group = await NhomKH.findOne({ gr_id: 452 })
-        const list_emp_id = group.emp_id.split(',')
-        const arr_id_KD = list_emp_id.map(emp_id => Number(emp_id))
-            //Lấy kd đã nhận ndt cuối cùng
+        const list_emp_id = group.emp_id.replaceAll(' ').split(',')
+        let arr_id_KD = []
+        for (let i = 0; i < list_emp_id.length; i++) {
+            if (list_emp_id[i] !== '') {
+                {
+                    arr_id_KD.push(Number(list_emp_id[i]))
+                }
+            }
+        }
+        let list_temp = [];
+        for (let i = 0; i < arr_id_KD.length; i++) {
+            let response = await axios({
+                method: 'post',
+                url: 'https://api.timviec365.vn/api/qlc/shift/list_shift_user_new',
+                data: {
+                    u_id: arr_id_KD[i],
+                    c_id: Number(group.company_id)
+                },
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            if (response && response.data && response.data.data && response.data.data.shift && response.data.data.shift.length) {
+                list_temp.push(arr_id_KD[i]);
+            }
+        }
+        arr_id_KD = list_temp;
+        //Lấy kd đã nhận ndt cuối cùng
         const lastKD = await Customer.find({ resoure: 1 }, { emp_id: 1, created_at: 1 }).sort({ created_at: -1 }).limit(1).lean()
             //Lấy vị trí của last KD trong ds KD
         if (lastKD && lastKD.length > 0) {
@@ -1340,9 +1698,9 @@ exports.addCustomerChoTot = async(req, res) => {
                 //Check ntd này đã thuộc KD nào chưa
                 let check_ntd
                 if (data[i]['Tên công ty'] && data[i]['Tên công ty'] !== '') {
-                    check_ntd = await Customer.findOne({ name: data[i]['Tên công ty'] }, { emp_id: 1, cus_id: 1, created_at: 1 }).sort({ created_at: -1 })
+                    check_ntd = await Customer.findOne({ name: data[i]['Tên công ty'] }, { emp_id: 1, cus_id: 1, created_at: 1, list_post: 1 }).sort({ created_at: -1 })
                 } else {
-                    check_ntd = await Customer.findOne({ phone_number: phone_number, resoure: 9 }, { emp_id: 1, cus_id: 1, created_at: 1 }).sort({ created_at: -1 })
+                    check_ntd = await Customer.findOne({ phone_number: phone_number, resoure: 9 }, { emp_id: 1, cus_id: 1, created_at: 1, list_post: 1 }).sort({ created_at: -1 })
                 }
                 //Chưa có ntd thì thêm mới ntd
                 if (!check_ntd) {
@@ -1382,20 +1740,34 @@ exports.addCustomerChoTot = async(req, res) => {
                     await SendMess(senderId, user._id, message)
                 } else { // Có rồi thì lưu thêm bài viết, cập nhật lại nhóm khách hàng
                     const post = {
-                        link_post: data[i]['link_post'], //link bài viết
-                        description: description,
-                        created_at: createDate
-                    }
-                    await Customer.updateOne({ cus_id: check_ntd.cus_id }, {
-                        $push: { list_post: post },
-                        $set: {
-                            group_id: 455,
-                            link: `https://hungha365.com/crm/nha-tuyen-dung/detail/${check_ntd.cus_id}`,
-                            description: description, //bài đăng
                             link_post: data[i]['link_post'], //link bài viết
-                            updated_at: createDate,
+                            description: description,
+                            created_at: createDate
                         }
-                    })
+                        //Check xem trong ngày đã đăng tin mới chưa
+                    const check_post = check_ntd.list_post.find(post => post.created_at > startTime)
+                    if (check_post) {
+                        await Customer.updateOne({ cus_id: check_ntd.cus_id }, {
+                            $push: { list_post: post },
+                            $set: {
+                                link: `https://hungha365.com/crm/nha-tuyen-dung/detail/${check_ntd.cus_id}`,
+                                description: description, //bài đăng
+                                link_post: data[i]['link_post'], //link bài viết
+                                updated_at: createDate,
+                            }
+                        })
+                    } else {
+                        await Customer.updateOne({ cus_id: check_ntd.cus_id }, {
+                            $push: { list_post: post },
+                            $set: {
+                                group_id: 455,
+                                link: `https://hungha365.com/crm/nha-tuyen-dung/detail/${check_ntd.cus_id}`,
+                                description: description, //bài đăng
+                                link_post: data[i]['link_post'], //link bài viết
+                                updated_at: createDate,
+                            }
+                        })
+                    }
                 }
 
             }
@@ -1416,9 +1788,32 @@ exports.addCustomerMXH = async(req, res) => {
         //Lấy ds kd đổ ntd về
         let index_KD = 0
         const group = await NhomKH.findOne({ gr_id: 452 })
-        const list_emp_id = group.emp_id.split(',')
-        const arr_id_KD = list_emp_id.map(emp_id => Number(emp_id))
-            //Lấy kd đã nhận ndt cuối cùng
+        const list_emp_id = group.emp_id.replaceAll(' ').split(',')
+        let arr_id_KD = []
+        for (let i = 0; i < list_emp_id.length; i++) {
+            if (list_emp_id[i] !== '') {
+                {
+                    arr_id_KD.push(Number(list_emp_id[i]))
+                }
+            }
+        }
+        let list_temp = [];
+        for (let i = 0; i < arr_id_KD.length; i++) {
+            let response = await axios({
+                method: 'post',
+                url: 'https://api.timviec365.vn/api/qlc/shift/list_shift_user_new',
+                data: {
+                    u_id: arr_id_KD[i],
+                    c_id: Number(group.company_id)
+                },
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            if (response && response.data && response.data.data && response.data.data.shift && response.data.data.shift.length) {
+                list_temp.push(arr_id_KD[i]);
+            }
+        }
+        arr_id_KD = list_temp;
+        //Lấy kd đã nhận ndt cuối cùng
         const lastKD = await Customer.find({ resoure: 4 }, { emp_id: 1, created_at: 1 }).sort({ created_at: -1 }).limit(1).lean()
             //Lấy vị trí của last KD trong ds KD
         if (lastKD && lastKD.length > 0) {
@@ -1527,7 +1922,7 @@ exports.StatisticalRegisterSocial = async(req, res) => {
         if (cus_from) {
             condition_match['cus_from'] = cus_from
         } else {
-            condition_match['emp_id'] = { $ne: 0 }
+            condition_match['cus_from'] = { $ne: 0 }
         }
         if (timeStart && timeEnd) {
             condition_match['created_at'] = { $gt: timeStart, $lt: timeEnd }
@@ -1628,7 +2023,6 @@ exports.StatisticalPostNewSocial = async(req, res) => {
             condition_filter = { '$gt': ['$$listpost.created_at', startTime] }
         }
 
-        console.log(condition_match);
         const list_cus = await Customer.aggregate([{
                 '$match': condition_match
             },
@@ -1706,6 +2100,38 @@ exports.StatisticalPostNewSocial = async(req, res) => {
             }
         ])
         return functions.success(res, "get data success", { list_cus });
+    } catch (err) {
+        console.log(err);
+        return functions.setError(res, err.message);
+    }
+}
+
+//Api lấy ra nguồn khách hàng: mxh, chợ tốt, fb
+exports.GetListCusfromMXH = async(req, res) => {
+    try {
+        const list_cus_from = await Customer.aggregate([{
+            '$match': {
+                'resoure': {
+                    '$in': [
+                        1, 4, 9
+                    ]
+                }
+            }
+        }, {
+            '$group': {
+                '_id': '$cus_from'
+            }
+        }, {
+            '$match': {
+                '_id': {
+                    '$nin': [
+                        'ntd_facebook', 'tv365', 'ntd_vieclamtot.com', '', null
+                    ]
+                }
+            }
+        }])
+        const list = list_cus_from.map(item => item._id)
+        return functions.success(res, "get data success", { list });
     } catch (err) {
         console.log(err);
         return functions.setError(res, err.message);

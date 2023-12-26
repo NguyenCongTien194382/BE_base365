@@ -158,7 +158,6 @@ exports.generalManagement = async (req, res, next) => {
     let logo_com = logo ? flcService.getLinkLogoCompany(logo.company_logo) : null;
     return functions.success(res, "thong tin chung: ", { data: { total_point, totalFlcSetPrice, totalFlcSave, totalFlcWorking, totalWorkDone, listJob, listFreelancerSetPrice, avatar_com, logo_com } });
   } catch (error) {
-    console.log("🚀 ~ file: company.js:154 ~ exports.generalManagement= ~ error:", error)
     return functions.setError(res, error.message);
   }
 }
@@ -230,17 +229,17 @@ exports.seeContactInfo = async (req, res, next) => {
               //gui mail
               let ntd = await Users.findOne({ idTimViec365: ntd_id, type: 1 }, { userName: 1, email: 1 });
               await flcService.sendEmailUv(ntd, freelancer);
-              return functions.success(res, "Xem thong tin freelancer thanh cong!");
+              return functions.success(res, "Xem thông tin thành công!");
             }
-            return functions.setError(res, "Ban khong co du diem", 400);
+            return functions.setError(res, "Bạn không có đủ điểm", 400);
           }
-          return functions.setError(res, "Ban chua co diem", 400);
+          return functions.setError(res, "Bạn chưa có điểm", 400);
         }
-        return functions.setError(res, "Ban da co thong tin lien he cua freelancer", 400);
+        return functions.setError(res, "Bạn đã có thông tin liên hệ của freelancer", 400);
       }
-      return functions.setError(res, "Freelancer not found", 400);
+      return functions.setError(res, "Không tìm thấy freelancer", 400);
     }
-    return functions.setError(res, "Missing input flc_id", 400);
+    return functions.setError(res, "Missing data", 400);
   } catch (error) {
     return functions.setError(res, error.message);
   }
@@ -360,7 +359,6 @@ exports.createJob = async (req, res, next) => {
     };
     return functions.setError(res, "Missing input value", 405);
   } catch (error) {
-    console.log("🚀 ~ file: company.js:359 ~ exports.createJob= ~ error:", error)
     return functions.setError(res, error.message);
   }
 };
@@ -566,7 +564,6 @@ exports.getListFreelancer = async (req, res, next) => {
 exports.getInfoCompany = async (req, res, next) => {
   try {
     let id_ntd = req.user.data.idTimViec365;
-    console.log("🚀 ~ file: company.js:569 ~ exports.getInfoCompany= ~ id_ntd:", id_ntd)
     let ntd = await Users.findOne({ idTimViec365: id_ntd, type: 1 }, {
       "userName": "$userName",
       "email": "$email",
@@ -594,7 +591,6 @@ exports.getInfoCompany = async (req, res, next) => {
     }
     return functions.setError(res, "company not found!");
   } catch (error) {
-    console.log("🚀 ~ file: company.js:596 ~ exports.getInfoCompany= ~ error:", error)
     return functions.setError(res, error.message);
   }
 }
@@ -637,7 +633,6 @@ exports.updateLogoCompany = async (req, res, next) => {
     }
     return functions.setError(res, "Missing input avatar image!", 400);
   } catch (error) {
-    console.log("🚀 ~ file: company.js:638 ~ exports.updateLogoCompany= ~ error:", error)
     return functions.setError(res, error.message);
   }
 }
@@ -1033,7 +1028,7 @@ exports.saveFreelancer = async (req, res, next) => {
         }
         return functions.setError(res, "Save freelancer fail!");
       }
-      return functions.setError(res, "Freelancer da duoc luu!", 400);
+      return functions.setError(res, "Freelancer đã được lưu!", 400);
     }
     return functions.setError(res, "Missing input id_flc", 400);
   } catch (error) {

@@ -5,6 +5,13 @@ const CustomerRoutes = require('../../../controllers/crm/Customer/Customer');
 const functions = require("../../../services/functions");
 
 
+// api tạo đề xuất cộng điểm CRM:
+router.post('/DexuatCongDiem', functions.checkToken, formData.parse(), CustomerRoutes.DexuatCongDiem)
+
+// api duyệt đề xuất công điểm 
+router.post('/DuyetDexuatCongDiem', functions.checkToken, formData.parse(), CustomerRoutes.DuyetDexuatCongDiem)
+
+
 //Api hiển thị và tìm kiếm 
 
 router.post('/list', functions.checkToken, formData.parse(), CustomerRoutes.showKH)
@@ -57,8 +64,12 @@ router.post("/editCustomerVT", functions.checkToken, formData.parse(), CustomerR
 router.post("/deleteCustomerVT", formData.parse(), CustomerRoutes.deleteCustomerVT)
 
 // Api thống kê ntd đăng ký mới từ mxh
-router.post('/StatisticalRegisterSocial', functions.checkToken, formData.parse(), CustomerRoutes.StatisticalRegisterSocial); 4
+router.post('/StatisticalRegisterSocial', functions.checkToken, formData.parse(), CustomerRoutes.StatisticalRegisterSocial);
+4
 
 // Api thống kê ntd đăng ký mới từ mxh
 router.post('/StatisticalPostNewSocial', functions.checkToken, formData.parse(), CustomerRoutes.StatisticalPostNewSocial);
+
+//Api lấy ra nguồn khách hàng: mxh, chợ tốt, fb
+router.post('/GetListCusfromMXH', functions.checkToken, formData.parse(), CustomerRoutes.GetListCusfromMXH);
 module.exports = router;

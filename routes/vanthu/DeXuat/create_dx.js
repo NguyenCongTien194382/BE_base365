@@ -50,4 +50,18 @@ router.post('/listProjects', functions.checkToken, formData.parse(), Controller.
 router.post('/settingPropose', functions.checkToken, formData.parse(), Controller.settingPropose)
 router.post('/listTSdaCPchoNV', functions.checkToken, formData.parse(), Controller.listTSdaCPchoNV)
 
+router.post('/edit_nghi_phep', functions.checkToken, formData.parse(), Controller.edit_nghi_phep)
+router.post('/edit_tam_ung', functions.checkToken, formData.parse(), Controller.edit_tam_ung)
+router.post('/edit_bo_nhiem', functions.checkToken, formData.parse(), Controller.edit_bo_nhiem)
+router.post('/edit_thanh_toan', functions.checkToken, formData.parse(), Controller.edit_thanh_toan)
+router.post('/edit_khieu_nai', functions.checkToken, formData.parse(), Controller.edit_khieu_nai)
+router.post('/edit_cong_cong', functions.checkToken, formData.parse(), Controller.edit_cong_cong)
+router.post('/edit_nghi_thai_san', functions.checkToken, formData.parse(), Controller.edit_nghi_thai_san)
+router.post('/edit_phong_hop', functions.checkToken, formData.parse(), Controller.edit_phong_hop)
+router.post('/edit_thuong_phat', functions.checkToken, formData.parse(), Controller.edit_thuong_phat)
+router.post('/edit_hoa_hong', functions.checkToken, formData.parse(), Controller.edit_hoa_hong)
+router.post('/edit_dmvs', functions.checkToken, formData.parse(), Controller.edit_dmvs)
+router.post('/edit_nprn', functions.checkToken, formData.parse(), Controller.edit_nprn)
+router.post('/edit_ngay_nhan_luong', functions.checkToken, formData.parse(), Controller.edit_ngay_nhan_luong)
+
 module.exports = router

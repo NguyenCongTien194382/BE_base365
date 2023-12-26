@@ -1252,8 +1252,8 @@ exports.getCompHistoryCheckin = async (req, res) => {
     const end = new Date(end_time)
     const final_start = new Date(start.setHours(0, 0, 0, 0))
     const final_end = new Date(end.setHours(23, 59, 59, 999))
-    console.log(final_start)
-    console.log(final_end)
+
+
     let condition = {
       ts_com_id: com_id,
       at_time: {
@@ -2210,7 +2210,7 @@ const insertTimeKeeping = async (
   wifi_ip,
   shift_id,
   img_url,
-  ts_location_name = '',
+  ts_location_name,
   device = 'winform'
 ) => {
   try {
@@ -2300,6 +2300,7 @@ const insertTimeKeeping = async (
 // chấm công cho winform
 exports.saveHisForWinform = async (req, res) => {
   try {
+    console.log("Vào chấm winform ==================")
     const type = req.user.data.type
     const com_id = req.user.data.com_id
     if (type == 1 && com_id) {
@@ -2311,10 +2312,11 @@ exports.saveHisForWinform = async (req, res) => {
       const time = req.body.time
       const now = new Date(time)
       let location_name = req.body.location_name
+      console.log("location_name", location_name)
       let device = 'web'
       if (listIds && img && ip && time) {
-        // check ip
 
+        let type_timesheet = 3
         if (true) {
           if (!location_name) {
             const findCompany = await Users.findOne(
@@ -2326,14 +2328,18 @@ exports.saveHisForWinform = async (req, res) => {
             )
 
             location_name = findCompany ? findCompany.address : ''
+            if (findCompany && findCompany.inForCompany && findCompany.inForCompany.cds && findCompany.inForCompany.cds.type_timesheet)
+              type_timesheet = findCompany.inForCompany.cds.type_timesheet
+
           }
+
           // lấy danh sách ids
           const idArr = listIds.split(',').map((item) => Number(item))
           const listEmp = []
 
           let settings = await SettingTimesheet.find({
             com_id: Number(com_id),
-            start_time: { $lte: now },
+            start_time: { $lte: new Date().setHours(23, 59, 59, 999) },
             end_time: { $gte: new Date().setHours(0, 0, 0, 0) },
           })
           // settings = settings.filter((item) =>
@@ -2364,6 +2370,7 @@ exports.saveHisForWinform = async (req, res) => {
 
             // thông tin ca ngày hôm đó
             let list_shift_timeSheet = []
+
             if (settings.length > 0) {
               let firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
               let lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
@@ -2567,64 +2574,6 @@ exports.saveHisForWinform = async (req, res) => {
                   // }
                 }
 
-                // if (data_location.length > 0) {
-
-                //   if (list_loc > 0) {
-                //     let kt = 0
-                //     let location = data_location.filter(e => list_loc.includes(Number(e.cor_id)))
-                //     if (location && location.length > 0) {
-                //       for (let t = 0; t < location.length; t++) {
-
-                //         const distance = calculateDistanceToCenter(
-                //           lat,
-                //           long,
-                //           location[t].cor_lat,
-                //           location[t].cor_long
-                //         )
-
-                //         if (distance > location[t].cor_radius && location[t].cor_radius != 0) kt++
-                //       }
-
-                //       if (kt == location.length) {
-                //         {
-                //           console.log("Lỗi vị trí")
-                //           fail++
-                //           flag = false
-                //           continue;
-                //         }
-                //       }
-                //     }
-                //     else {
-                //       console.log("Lỗi vị trí")
-                //       fail++
-                //       flag = false
-                //       continue;
-                //     }
-                //   }
-                //   else {
-                //     if (type_loc == 2) {
-                //       let kt = 0
-                //       for (let t = 0; t < data_location.length; t++) {
-                //         const distance = calculateDistanceToCenter(
-                //           lat,
-                //           long,
-                //           data_location[t].cor_lat,
-                //           data_location[t].cor_long
-                //         )
-                //         if (distance > data_location[t].radius) kt++
-                //       }
-                //       if (kt == data_location.length) {
-                //         {
-                //           console.log("Lỗi vị trí")
-                //           fail++
-                //           flag = false
-                //           continue;
-                //         }
-                //       }
-
-                //     }
-                //   }
-                // }
                 // check ip
                 if (list_wifi.length > 0) {
                   const curIpId = wifi.find((item) => item.ip_access == ip)
@@ -2684,28 +2633,33 @@ exports.saveHisForWinform = async (req, res) => {
                 )
               // nếu không tồn tại ca -> không chấm được
               if (shiftInfo.shift.length == 0) {
-                console.log("Chấm công thất bại : Không có ca thỏa mãn :", user.userName)
-                // const noShift = await insertTimeKeeping(
-                //   com_id,
-                //   idQLC,
-                //   time,
-                //   lat,
-                //   long,
-                //   ip,
-                //   0,
-                //   img,
-                //   location_name,
-                //   'winform'
-                // )
-                // // return noShift.success ? functions.success(res, 'Chấm công thành công ( Ca không tồn tại)', {}) : functions.setError(res, noShift.message, 500)
-                // if (noShift.success) {
-                //   listEmp.push({
-                //     name: shiftInfo.ep_name,
-                //     image: noShift.data.image,
-                //   })
-                // } else {
-                //   console.log(shiftInfo.message)
-                // }
+
+                if (type_timesheet !== 2) {
+                  const noShift = await insertTimeKeeping(
+                    com_id,
+                    idQLC,
+                    time,
+                    lat,
+                    long,
+                    ip,
+                    0,
+                    img,
+                    location_name,
+                    'winform'
+                  )
+                  return noShift.success
+                    ? functions.success(
+                      res,
+                      'Chấm công thành công ( Ca không tồn tại)',
+                      {
+                        idQLC: user.idQLC,
+                        ep_name: user.userName,
+                        image: noShift.data.image,
+                      }
+                    )
+                    : functions.setError(res, noShift.message, 500)
+                }
+                else return functions.setError(res, "Chấm công thất bại : Không có ca", 500)
               }
               // tồn tại 1 ca
               else if (shiftInfo.shift.length == 1) {
@@ -2833,6 +2787,22 @@ exports.saveHisForApp = async (req, res) => {
       let location_name = req.body.location_name
       let shiftId = Number(req.body.shiftId)
       if (idQLC && img && time) {
+        // lấy thông tin công ty
+        let type_timesheet = 3
+        if (!location_name) {
+          const findCompany = await Users.findOne(
+            {
+              idQLC: com_id,
+              type: 1,
+            },
+            { address: 1 }
+          )
+
+          location_name = findCompany ? findCompany.address : ''
+          if (findCompany && findCompany.inForCompany && findCompany.inForCompany.cds && findCompany.inForCompany.cds.type_timesheet)
+            type_timesheet = findCompany.inForCompany.cds.type_timesheet
+        }
+
         //lấy thông tin nhân viên
         const user = await Users.findOne({
           idQLC: Number(idQLC),
@@ -2850,7 +2820,7 @@ exports.saveHisForApp = async (req, res) => {
 
         let settings = await SettingTimesheet.find({
           com_id: Number(com_id),
-          start_time: { $lte: now },
+          start_time: { $lte: new Date().setHours(23, 59, 59, 999) },
           end_time: { $gte: new Date().setHours(0, 0, 0, 0) },
         })
 
@@ -2897,12 +2867,13 @@ exports.saveHisForApp = async (req, res) => {
             id_com: Number(com_id),
           }).lean()
           // console.log(shifts)
-          if (llv.length < 1)
+          if (llv.length < 1) {
             return functions.setError(
               res,
               'Nhân viên không tồn tại lịch làm việc',
               500
             )
+          }
 
           const cy_detail = llv[0].cycle.cy_detail
 
@@ -3203,43 +3174,40 @@ exports.saveHisForApp = async (req, res) => {
             shiftInfo.shift = shiftInfo.shift.filter((e) =>
               list_shift_timeSheet.includes(Number(e.shift_id))
             )
-          // else shiftInfo.shift = []
-          if (!location_name) {
-            const findCompany = await Users.findOne(
-              {
-                idQLC: com_id,
-                type: 1,
-              },
-              { address: 1 }
-            )
 
-            location_name = findCompany ? findCompany.address : ''
-          }
           // nếu không tồn tại ca -> vẫn chấm công
           if (shiftInfo.shift.length == 0) {
-            console.log(
-              '----------------------Không có ca làm việc thỏa mãn------------------------------'
-            )
+
+            if (type_timesheet !== 2) {
+              if (!shiftId) {
+                const noShift = await insertTimeKeeping(
+                  com_id,
+                  idQLC,
+                  time,
+                  lat,
+                  long,
+                  ip,
+                  0,
+                  img,
+                  location_name,
+                  'app'
+                )
+                return noShift.success
+                  ? functions.success(
+                    res,
+                    'Chấm công thành công ( Ca không tồn tại)',
+                    {
+                      idQLC: user.idQLC,
+                      ep_name: user.userName,
+                      image: noShift.data.image,
+                    }
+                  )
+                  : functions.setError(res, noShift.message, 500)
+              }
+              else return functions.setError(res, "Chấm công thất bại :Ca làm việc không thỏa mãn", 500)
+            }
             return functions.setError(res, "Chấm công thất bại : Không có ca thỏa mãn", 500)
-            // const noShift = await insertTimeKeeping(
-            //   com_id,
-            //   idQLC,
-            //   time,
-            //   lat,
-            //   long,
-            //   ip,
-            //   0,
-            //   img,
-            //   location_name,
-            //   'app'
-            // )
-            // return noShift.success
-            //   ? functions.success(
-            //     res,
-            //     'Chấm công thành công ( Ca không tồn tại)',
-            //     {}
-            //   )
-            //   : functions.setError(res, noShift.message, 500)
+
           }
           // tồn tại 1 ca
           else if (shiftInfo.shift.length == 1) {
@@ -3803,9 +3771,24 @@ exports.saveHisForWebNew_shiftNew = async (req, res) => {
       const ip = req.body.ip
       const time = req.body.time
       let device = req.body.device
-
+      let location_name = req.body.location_name
       device = 'web'
       if (idQLC && img && ip && time && device) {
+        let type_timesheet = 3
+        if (!location_name) {
+          const findCompany = await Users.findOne(
+            {
+              idQLC: com_id,
+              type: 1,
+            }
+          )
+
+          location_name = findCompany ? findCompany.address : ''
+
+          if (findCompany && findCompany.inForCompany && findCompany.inForCompany.cds && findCompany.inForCompany.cds.type_timesheet)
+            type_timesheet = findCompany.inForCompany.cds.type_timesheet
+        }
+
         //lấy thông tin nhân viên
         const user = await Users.findOne({
           idQLC: Number(idQLC),
@@ -3817,10 +3800,10 @@ exports.saveHisForWebNew_shiftNew = async (req, res) => {
         const now = new Date(time)
         const settings = await SettingTimesheet.find({
           com_id: Number(com_id),
-          start_time: { $lte: now },
+          start_time: { $lte: new Date().setHours(23, 59, 59, 999) },
           end_time: { $gte: new Date().setHours(0, 0, 0, 0) },
         })
-        console.log('settings', settings)
+
 
         // check thông tin có được chấm công hay không
         // đối với web chỉ cần check phòng ban, vị trí, idqlc, ca, ip, thiết bị
@@ -3901,7 +3884,6 @@ exports.saveHisForWebNew_shiftNew = async (req, res) => {
           console.log(settings.length)
           const checkAll = false
           for (let i = 0; i < settings.length; i++) {
-            console.log('Lần thứ ', i + 1)
             let flag = true
             const setting = settings[i]
             console.log(setting)
@@ -4034,79 +4016,6 @@ exports.saveHisForWebNew_shiftNew = async (req, res) => {
               }
               // }
             }
-
-            // check vị trí
-            // if (data_location.length > 0) {
-
-            //   if (list_loc > 0) {
-            //     let kt = 0
-            //     let location = data_location.filter(e => list_loc.includes(Number(e.cor_id)))
-            //     if (location && location.length > 0) {
-            //       for (let t = 0; t < location.length; t++) {
-
-            //         const distance = calculateDistanceToCenter(
-            //           lat,
-            //           long,
-            //           location[t].cor_lat,
-            //           location[t].cor_long
-            //         )
-
-            //         if (distance > location[t].cor_radius && location[t].cor_radius != 0) kt++
-            //         console.log("lat", lat)
-            //         console.log("long", long)
-            //         console.log("location[t].cor_lat", location[t].cor_lat)
-            //         console.log("location[t].cor_long", location[t].cor_long)
-            //         console.log("distance", distance)
-            //         console.log("location[t].cor_radius", location[t].cor_radius)
-            //       }
-
-            //       if (kt == location.length) {
-            //         {
-            //           console.log("Lỗi vị trí")
-            //           fail++
-            //           flag = false
-            //           continue;
-            //         }
-            //       }
-            //     }
-            //     else {
-            //       console.log("Lỗi vị trí")
-            //       fail++
-            //       flag = false
-            //       continue;
-            //     }
-            //   }
-            //   else {
-            //     if (type_loc == 2) {
-            //       let kt = 0
-            //       for (let t = 0; t < data_location.length; t++) {
-            //         const distance = calculateDistanceToCenter(
-            //           lat,
-            //           long,
-            //           data_location[t].cor_lat,
-            //           data_location[t].cor_long
-            //         )
-            //         if (distance > data_location[t].cor_radius) kt++
-            //         console.log("lat", lat)
-            //         console.log("long", long)
-            //         console.log("data_location[t].cor_lat", data_location[t].cor_lat)
-            //         console.log("data_location[t].cor_long", data_location[t].cor_long)
-            //         console.log("distance", distance)
-            //         console.log("data_location[t].cor_radius", data_location[t].cor_radius)
-            //       }
-            //       console.log("kt", kt)
-            //       if (kt == data_location.length) {
-            //         {
-            //           console.log("Lỗi vị trí")
-            //           fail++
-            //           flag = false
-            //           continue;
-            //         }
-            //       }
-
-            //     }
-            //   }
-            // }
 
             // check ip
             if (list_wifi.length > 0) {
@@ -4269,28 +4178,33 @@ exports.saveHisForWebNew_shiftNew = async (req, res) => {
           // nếu không tồn tại ca -> vẫn chấm công
           if (shiftInfo.shift.length == 0) {
 
-            return functions.setError(res, "Chấm công thất bại : Không có ca", 500)
+            if (type_timesheet !== 2) {
+              const noShift = await insertTimeKeeping(
+                com_id,
+                idQLC,
+                time,
+                lat,
+                long,
+                ip,
+                0,
+                img,
+                location_name,
+                'web'
+              )
+              return noShift.success
+                ? functions.success(
+                  res,
+                  'Chấm công thành công ( Ca không tồn tại)',
+                  {
+                    idQLC: user.idQLC,
+                    ep_name: user.userName,
+                    image: noShift.data.image,
+                  }
+                )
+                : functions.setError(res, noShift.message, 500)
+            }
+            else return functions.setError(res, "Chấm công thất bại : Không có ca", 500)
 
-            // const noShift = await insertTimeKeeping(
-            //   com_id,
-            //   idQLC,
-            //   time,
-            //   lat,
-            //   long,
-            //   ip,
-            //   0,
-            //   img
-            // )
-            // console.log(
-            //   'ket thuc cham cong 0 shift-----------------------------------------------------'
-            // )
-            // return noShift.success
-            //   ? functions.success(
-            //       res,
-            //       'Chấm công thành công ( Ca không tồn tại)',
-            //       {}
-            //     )
-            //   : functions.setError(res, noShift.message, 500)
           }
           // tồn tại 1 ca
           else if (shiftInfo.shift.length == 1) {
@@ -4302,10 +4216,9 @@ exports.saveHisForWebNew_shiftNew = async (req, res) => {
               long,
               ip,
               shiftInfo.shift[0].shift_id,
-              img
-            )
-            console.log(
-              'ket thuc cham cong 1 shift -----------------------------------------------------'
+              img,
+              location_name,
+              'web'
             )
             return oneShift.success
               ? functions.success(res, 'Chấm công thành công', {
@@ -4329,8 +4242,10 @@ exports.saveHisForWebNew_shiftNew = async (req, res) => {
                 lat,
                 long,
                 ip,
-                temp_shift_id,
-                img
+                shiftInfo.shift[0].shift_id,
+                img,
+                location_name,
+                'web'
               )
               if (!image) image = tempShift.data.image
               if (tempShift.success) success++

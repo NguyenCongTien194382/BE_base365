@@ -39,7 +39,93 @@ exports.MAX_STORAGE = 300 * MbSize
 
 dotenv.config()
 
-// kiểm tra đơn nghỉ phép CRM để chuyển giở khi NTD đăng ký đăng nhập đăng tin khi kinh doanh nghỉ 
+// 1543408 : gửi tin nhắn vào nhóm duyệt đề xuất 
+exports.sendMessageDexuatDiemCrm = async(IdChatChuyenVien, mess) => {
+    try {
+        await axios({
+            method: "post",
+            url: "http://210.245.108.202:9000/api/message/SendMessage",
+            data: {
+                ConversationID: 1543408,
+                SenderID: IdChatChuyenVien,
+                MessageType: 'text',
+                Message: mess
+            },
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+        return true;
+    } catch (e) {
+        console.log("sendMessageToChuyenVien error", e)
+        return false;
+    }
+};
+
+exports.sendMessageToChuyenVien = async(IdChatChuyenVien, mess) => {
+    try {
+        console.log("Gửi tin nhắn cho chuyên viên", IdChatChuyenVien)
+        let res = await axios({
+            method: "post",
+            url: "http://210.245.108.202:9000/api/conversations/CreateNewConversation",
+            data: {
+                userId: IdChatChuyenVien,
+                contactId: 1192,
+            },
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+        let conversationId = res.data.data.conversationId;
+
+        await axios({
+            method: "post",
+            url: "http://210.245.108.202:9000/api/message/SendMessage",
+            data: {
+                ConversationID: Number(conversationId),
+                SenderID: 1192,
+                MessageType: 'text',
+                Message: mess
+            },
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+        return true;
+    } catch (e) {
+        console.log("sendMessageToChuyenVien error", e)
+        return false;
+    }
+};
+
+exports.sendMessageToChuyenVienQlc = async(idQlcChuyenVien, mess) => {
+        try {
+            let chuyenvien = await Users.findOne({ idQLC: idQlcChuyenVien, type: 2 }, { _id: 1 }).lean();
+            let IdChatChuyenVien = chuyenvien._id;
+            console.log("Gửi tin nhắn cho chuyên viên", IdChatChuyenVien)
+            let res = await axios({
+                method: "post",
+                url: "http://210.245.108.202:9000/api/conversations/CreateNewConversation",
+                data: {
+                    userId: IdChatChuyenVien,
+                    contactId: 1192,
+                },
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            let conversationId = res.data.data.conversationId;
+
+            await axios({
+                method: "post",
+                url: "http://210.245.108.202:9000/api/message/SendMessage",
+                data: {
+                    ConversationID: Number(conversationId),
+                    SenderID: 1192,
+                    MessageType: 'text',
+                    Message: mess
+                },
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            return true;
+        } catch (e) {
+            console.log("sendMessageToChuyenVien error", e)
+            return false;
+        }
+    }
+    // kiểm tra đơn nghỉ phép CRM để chuyển giở khi NTD đăng ký đăng nhập đăng tin khi kinh doanh nghỉ 
 exports.CheckNghiPhep = async(idCRM) => {
     let time = new Date().getTime() / 1000;
     let dataNghi = await ManageNghiPhep.find({
@@ -247,7 +333,7 @@ exports.tranferGioElastic = async(userId) => {
                     url: 'http://43.239.223.57:9006/add_company',
                     data: data
                 };
-                console.log("Cập nhật lại tất", listUser[i].idTimViec365);
+                //console.log("Cập nhật lại tất", listUser[i].idTimViec365);
                 axios.request(config).catch((e) => console.log("Lỗi khi cập nhật dữ liệu"));
                 await sleep(40);
                 //console.log(response.data);
@@ -2166,7 +2252,11 @@ exports.inForHHP = () => {
 
 
 exports.sleep = (ms) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    try {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    } catch (e) {
+        return false;
+    }
 };
 
 // hàm kiểm tra lịch sử hoạt động CRM trong ngày hôm nay 

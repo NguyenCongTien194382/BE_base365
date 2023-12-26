@@ -128,7 +128,8 @@ exports.ChitietDx = async(req, res) => {
                 tam_ung_status: dexuat.tam_ung_status,
                 thanh_toan_status: dexuat.thanh_toan_status,
                 confirm_status: await serviceVanthu.confirmed(_id, id_user),
-                ly_do_tu_choi: dexuat.refuse_reason
+                ly_do_tu_choi: dexuat.refuse_reason,
+                edited: dexuat.edited,
             }]
             return functions.success(res, 'get data success', { detailDeXuat });
         }

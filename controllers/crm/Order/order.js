@@ -3,14 +3,15 @@ const CRMOrderModel = require("../../../models/crm/Order/order");
 const product_order = require("../../../models/crm/Order/product_order");
 const diary_order = require("../../../models/crm/Diary/diary_orders");
 const customer = require("../../../models/crm/Customer/customer");
+const users = require("../../../models/Users")
 
 const discount_money_value = (bill_discount_rate, bill_discount_money) => {
   const discount_money =
     bill_discount_rate || !bill_discount_money
       ? 0
       : bill_discount_money !== 0
-      ? bill_discount_money
-      : 0;
+        ? bill_discount_money
+        : 0;
   return discount_money;
 };
 
@@ -104,6 +105,7 @@ exports.addOrder = async (req, res) => {
       share_all,
       order_discount_rate,
       order_discount_money,
+      quote_id
     } = req.body;
 
     const maxID = await CRMOrderModel.find().sort({ _id: -1 }).limit(1).lean();
@@ -176,6 +178,7 @@ exports.addOrder = async (req, res) => {
         : 0,
       order_discount_money: discount_money,
       total_money: order_total,
+      quote_id
     });
 
     const savedOrder = await newOrder.save();
@@ -303,6 +306,7 @@ exports.editOrder = async (req, res) => {
       order_discount_rate,
       order_discount_money,
       reason,
+      quote_id
     } = req.body;
 
     const productData = req.body.productData;
@@ -387,14 +391,14 @@ exports.editOrder = async (req, res) => {
               !order_discount_rate && order_discount_money
                 ? 0
                 : order_discount_rate
-                ? order_discount_rate
-                : exitData?.order_discount_rate,
+                  ? order_discount_rate
+                  : exitData?.order_discount_rate,
             order_discount_money:
               order_discount_rate && order_discount_rate !== 0
                 ? 0
                 : order_discount_money !== 0
-                ? order_discount_money
-                : exitData?.order_discount_money,
+                  ? order_discount_money
+                  : exitData?.order_discount_money,
             total_money:
               total_money || order_discount_rate || order_discount_money
                 ? order_total
@@ -600,6 +604,7 @@ exports.listOrder = async (req, res) => {
       page = 1,
       pageSize = 10,
       cus_id,
+      quote_id
     } = req.body;
 
     const searchConditions = {
@@ -634,6 +639,7 @@ exports.listOrder = async (req, res) => {
     if (campaign_id) searchConditions.campaign_id = campaign_id;
     if (chance_id) searchConditions.chance_id = chance_id;
     if (cus_id) searchConditions.cus_id = cus_id;
+    if (quote_id) searchConditions.quote_id = quote_id;
 
     const startIndex = (page - 1) * pageSize;
 
@@ -648,6 +654,14 @@ exports.listOrder = async (req, res) => {
         select: "name",
         localField: "cus_id",
         foreignField: "cus_id",
+      })
+      .populate({
+        path: "user_create_id",
+        model: users,
+        options: { lean: true },
+        select: "userName",
+        localField: "user_create_id",
+        foreignField: "idQLC",
       })
       .lean();
 

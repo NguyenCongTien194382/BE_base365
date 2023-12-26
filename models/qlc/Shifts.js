@@ -94,6 +94,11 @@ const ShiftSchema = new Schema({
         //0: chấm công linh hoạt, 1: chấm công quy chuẩn
         type: Number,
         default: 0
+    },
+
+    type_end_date: {
+        type: Number,
+        default: 0
     }
 }, {
     collection: 'QLC_Shifts',

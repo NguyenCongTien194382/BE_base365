@@ -167,11 +167,6 @@ const Vanthu_de_xuat = new Schema({
                 default: null,
 
             },
-            organizeDetailId: { // ten phong ban 
-                type: Number,
-                default: null,
-
-            },
             chucvu_hientai: {
                 type: Number,
                 default: null,
@@ -705,6 +700,10 @@ const Vanthu_de_xuat = new Schema({
     refuse_reason: {
         type: String,
         default: '',
-    }
+    },
+    edited: {
+        type: Boolean,
+        default: false
+    },
 })
 module.exports = mongoose.model("Vanthu_de_xuat", Vanthu_de_xuat);

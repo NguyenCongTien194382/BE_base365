@@ -195,73 +195,74 @@ exports.xac_nhan_tam_ung = async(req, res) => {
     }
 }
 exports.xac_nhan_thanh_toan = async(req, res) => {
-        try {
-            let {
-                _id,
-                type_xac_nhan,
-            } = req.body;
-            const com_id = req.user.data.com_id;
-            const id_user = req.user.data.idQLC;
-            const dx = await De_Xuat.findOne({
-                _id: _id,
-                com_id: com_id,
-                id_user: id_user,
-            })
-            if (dx) {
-                if (dx.type_duyet === 5) {
-                    if (type_xac_nhan === '0') {
-                        const nd = dx.noi_dung.thanh_toan;
-                        let max_id;
-                        let max = await ThanhToan.findOne({}, {}, { sort: { pay_id: -1 } }).lean() || 0;
-                        if (!max) {
-                            max_id = 0
-                        } else {
-                            max_id = max.pay_id;
-                        }
-                        const createDate = new Date(dx.time_create * 1000);
-                        const createTT = new ThanhToan({
-                            pay_id: max_id + 1,
-                            pay_id_user: dx.id_user,
-                            pay_id_com: dx.com_id,
-                            pay_price: nd.so_tien_tt,
-                            pay_status: 2,
-                            pay_case: nd.ly_do,
-                            pay_day: createDate.toISOString(),
-                            pay_month: createDate.getMonth() + 1,
-                            pay_year: createDate.getFullYear(),
-                            fromDx: dx._id,
-                        });
-                        await createTT.save();
-                        if (createTT) {
-                            await De_Xuat.findOneAndUpdate({ _id: _id }, {
-                                $set: {
-                                    thanh_toan_status: 2,
-                                }
-                            }, { new: true });
-                            return res.status(200).json({ message: 'Xác nhận nhận tiền thanh toán thành công', dataTT: createTT });
-                        } else {
-                            return functions.setError(res, "Thông tin truyền lên không đầy đủ");
-                        }
+    try {
+        let {
+            _id,
+            type_xac_nhan,
+        } = req.body;
+        const com_id = req.user.data.com_id;
+        const id_user = req.user.data.idQLC;
+        const dx = await De_Xuat.findOne({
+            _id: _id,
+            com_id: com_id,
+            id_user: id_user,
+        })
+        if (dx) {
+            if (dx.type_duyet === 5) {
+                if (type_xac_nhan === '0') {
+                    const nd = dx.noi_dung.thanh_toan;
+                    let max_id;
+                    let max = await ThanhToan.findOne({}, {}, { sort: { pay_id: -1 } }).lean() || 0;
+                    if (!max) {
+                        max_id = 0
                     } else {
+                        max_id = max.pay_id;
+                    }
+                    const createDate = new Date(dx.time_create * 1000);
+                    const createTT = new ThanhToan({
+                        pay_id: max_id + 1,
+                        pay_id_user: dx.id_user,
+                        pay_id_com: dx.com_id,
+                        pay_price: nd.so_tien_tt,
+                        pay_status: 2,
+                        pay_case: nd.ly_do,
+                        pay_day: createDate.toISOString(),
+                        pay_month: createDate.getMonth() + 1,
+                        pay_year: createDate.getFullYear(),
+                        fromDx: dx._id,
+                    });
+                    await createTT.save();
+                    if (createTT) {
                         await De_Xuat.findOneAndUpdate({ _id: _id }, {
                             $set: {
-                                thanh_toan_status: 3,
+                                thanh_toan_status: 2,
                             }
                         }, { new: true });
-                        return res.status(200).json({ message: 'Xác nhận không nhận tiền thanh toán thành công' });
+                        return res.status(200).json({ message: 'Xác nhận nhận tiền thanh toán thành công', dataTT: createTT });
+                    } else {
+                        return functions.setError(res, "Thông tin truyền lên không đầy đủ");
                     }
                 } else {
-                    return res.status(200).json({ message: 'Đề xuất chưa được duyệt' });
+                    await De_Xuat.findOneAndUpdate({ _id: _id }, {
+                        $set: {
+                            thanh_toan_status: 3,
+                        }
+                    }, { new: true });
+                    return res.status(200).json({ message: 'Xác nhận không nhận tiền thanh toán thành công' });
                 }
             } else {
-                return res.status(200).json({ message: 'Đề xuất không tồn tại trong hệ thống' });
+                return res.status(200).json({ message: 'Đề xuất chưa được duyệt' });
             }
-        } catch (error) {
-            console.error('Failed ', error);
-            return functions.setError(res, error);
+        } else {
+            return res.status(200).json({ message: 'Đề xuất không tồn tại trong hệ thống' });
         }
+    } catch (error) {
+        console.error('Failed ', error);
+        return functions.setError(res, error);
     }
-    // duyet de xuat tam ung 
+}
+
+// duyet de xuat tam ung 
 exports.duyet_de_xuat_tam_ung = async(req, res) => {
     try {
         const { _id, id_user_duyet, id_user_theo_doi } = req.body;

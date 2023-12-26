@@ -2,14 +2,8 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const SettingConfirmTimeSheetchema = new Schema({
-
-    // id bảng
-    id: {
-        type: Number,
-        require: true
-    },
     // id công ty
-    comId: {
+    com_id: {
         type: Number,
         require: true
     },
@@ -24,11 +18,11 @@ const SettingConfirmTimeSheetchema = new Schema({
     }],
     created_time: {
         type: Number,
-        default: 0
+        default: new Date()
     },
     update_time: {
         type: Number,
-        default: 0
+        default: new Date()
     },
 
 }, {

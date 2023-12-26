@@ -51,6 +51,10 @@ const crm_quote = new Schema ({
         type: String,
         default: null
     },
+    chance_id: {
+        type: Number,
+        default: 0
+    },
     // Cơ hội, giao diện có, tài liệu không
     introducer: { // Lời giới thiệu
         type: String,
@@ -133,6 +137,10 @@ const crm_quote = new Schema ({
     use_system_info: { // Trên giao diện: Thông tin hệ thống, checkbox dùng chung
         type: Boolean,
         default: null
+    },
+    print_template_id: { // Lưu mẫu báo giá
+        type: Number,
+        default: 0
     },
 
     user_created_id: {

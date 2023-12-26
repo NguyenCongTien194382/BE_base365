@@ -199,6 +199,10 @@ const crm_order = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    quote_id: {
+      type: Number,
+      default: 0
+    },
   },
   {
     collection: "CRM_Order",

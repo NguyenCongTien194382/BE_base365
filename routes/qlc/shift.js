@@ -17,7 +17,7 @@ router.post("/detail", functions.checkToken, formData.parse(), ShiftController.g
 
 // API lấy thông tin ca làm việc lúc chấm công
 router.post('/list_shift_user', functions.checkToken, formData.parse(), ShiftController.list_shift_user);
-
+router.post('/list_shift_user_new', formData.parse(), ShiftController.list_shift_user_new);
 
 //API lấy thông tin ca làm việc chấm công 2
 // router.post('/userShiftInfo', functions.checkToken, formData.parse(), ShiftController.list_shift_user2);

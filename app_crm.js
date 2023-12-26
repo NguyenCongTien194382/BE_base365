@@ -63,12 +63,14 @@ AppCRM.use("/api/crm", CrmRouter);
 errorApp(AppCRM);
 
 const DB_URL = 'mongodb://localhost:27017/api-base365';
-mongoose.connect(DB_URL)
+mongoose.connect(DB_URL, { serverSelectionTimeoutMS: 10000 })
     .then(() => console.log('APP CRM: DB Connected!'))
     .catch(error => console.log('APP CRM: DB connection error:', error.message));
-
+mongoose.connection.on('error', function() {
+    console.log("Lỗi try vấn")
+});
 cron.schedule('*/30 * * * * *', () => {
-    // handle_auto_call()
+    handle_auto_call()
 });
 
 // // Quản trị crm

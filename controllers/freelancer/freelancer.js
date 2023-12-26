@@ -29,7 +29,7 @@ exports.datGia = async (req, res, next) => {
               }, { new: true });
               return functions.success(res, 'NTD đã từ chối đặt giá của bạn.Bạn đã đặt lại giá thành công!');
             } else {
-              return functions.setError(res, "Ban da dat gia cho job nay!");
+              return functions.setError(res, "Bạn đã đặt giá cho công việc này!");
             }
           }
           let maxId = await functions.getMaxIdByField(PriceSetting, 'id');
@@ -49,7 +49,7 @@ exports.datGia = async (req, res, next) => {
         }
         return functions.setError(res, "Job not found!", 404);
       }
-      return functions.setError(res, "Invalid email!", 405);
+      return functions.setError(res, "Email không hợp lệ!", 405);
     }
     return functions.setError(res, "Missing input value!", 405);
   } catch (error) {
@@ -143,13 +143,16 @@ exports.getInfo = async (req, res, next) => {
           "salary_estimate_number_1": "$inforFreelancer.salary_estimate_number_1",
           "salary_salary_estimate_number_2": "$inforFreelancer.salary_salary_estimate_number_2",
           "salary_permanent_date": "$inforFreelancer.salary_permanent_date",
+          "hide_uv": "$inforFreelancer.hide_uv",
           "category_id": "$inforFreelancer.category_id",
           "skill_detail": "$inforFreelancer.skill_detail",
           "WorkType": "$WorkType.work_name",
           "Category": "$Category.category_name",
           "WorkPlace": "$WorkPlace.cit_name",
-          createdAt: 1,
-          userName: 1
+          "tenFile": "$inforFreelancer.ten_file",
+          "file": "$inforFreelancer.file",
+          "createdAt": 1,
+          "userName": 1
         }
       }
     ]);
@@ -346,7 +349,6 @@ exports.updateAvatarFreelancer = async (req, res, next) => {
     }
     return functions.setError(res, "Missing input avatar image!", 404);
   } catch (error) {
-    console.log("🚀 ~ file: freelancer.js:281 ~ exports.updateAvatarFreelancer= ~ error:", error)
     return functions.setError(res, error.message);
   }
 }
@@ -354,7 +356,6 @@ exports.updateAvatarFreelancer = async (req, res, next) => {
 exports.updateIntro = async (req, res, next) => {
   try {
     let flc_id = req.user.data.idTimViec365;
-    console.log("🚀 ~ file: freelancer.js:328 ~ exports.updateIntro= ~ flc_id:", flc_id)
     let { skill_year, user_des } = req.body;
     if (!skill_year) skill_year = 0;
     if (!user_des) user_des = "";
@@ -521,7 +522,6 @@ exports.danhgiacongviec = async (req, res, next) => {
       const check = await PriceSetting.findOneAndUpdate({ id: Number(id), flc_id: userID }, {
         vote: star
       });
-      console.log("🚀 ~ file: freelancer.js:523 ~ exports.danhgiacongviec= ~ check:", { id, employee_id: userID })
       if (check) return functions.success(res, 'success')
       return functions.setError(res, 'not found', 404)
     }
@@ -635,7 +635,7 @@ exports.flcDeleteSaveJob = async (req, res, next) => {
     let flc_id = req.user.data.idTimViec365;
     let id = req.body.id;
     if (id) {
-      let saveJob = await SaveJob.findOneAndDelete({ id: Number(id), flc_id: flc_id });
+      let saveJob = await SaveJob.findOneAndDelete({ job_id: Number(id), flc_id: flc_id });
       if (saveJob) {
         return functions.success(res, "delete savejob success!");
       }
@@ -656,14 +656,14 @@ exports.changePassword = async (req, res, next) => {
       let checkPassword = await functions.verifyPassword(oldPass, flc.password);
       if (checkPassword) {
         let updatePassword = await Users.findOneAndUpdate({ idTimViec365: id_flc, type: 0 }, {
-          password: md5(newPass),
+          password: functions.createMd5(newPass),
         }, { new: true });
         if (updatePassword) {
           return functions.success(res, "Update password success!");
         }
         return functions.setError(res, "Update password fail!", 407);
       }
-      return functions.setError(res, "Wrong password!", 406);
+      return functions.setError(res, "Nhập sai mật khẩu, vui lòng nhập lại!", 406);
     }
     return functions.setError(res, "Missing input value!", 405);
   } catch (error) {
@@ -689,7 +689,41 @@ exports.updateAvatarAfterLogin = async (req, res) => {
     }
     return functions.setError(res, 'Missing data', 400);
   } catch (error) {
-    console.log("🚀 ~ file: freelancer.js:643 ~ exports.updateAvatarAfterLogin= ~ error:", error)
+    return functions.setError(res, error.message)
+  }
+}
+
+exports.refreshInfo = async (req, res) => {
+  try {
+    const id_flc = req.user.data.idTimViec365;
+    await Users.findOneAndUpdate({ idTimViec365: id_flc }, { updatedAt: Math.round(new Date().getTime() / 1000) });
+    return functions.success(res, 'thành công')
+  } catch (error) {
+    return functions.setError(res, error.message)
+  }
+}
+
+exports.hosonangluc = async (req, res) => {
+  try {
+    const id_flc = req.user.data.idTimViec365;
+    const name = req.body.name;
+    if (!req.files && !name || !name) {
+      return functions.setError(res, 'missing data', 400)
+    }
+    if (req.files && req.files.file) {
+      let file = req.files.file;
+      ten_file = await flcService.uploadFile(new Date().getTime() / 1000, file, id_flc);
+      const check = await Users.findOneAndUpdate({ idTimViec365: id_flc }, {
+        "inforFreelancer.ten_file": name,
+        "inforFreelancer.file": ten_file,
+      }, { new: true })
+      return functions.success(res, 'thành công')
+    }
+    await Users.findOneAndUpdate({ idTimViec365: id_flc }, {
+      ten_file: name,
+    }, { new: true })
+    return functions.success(res, 'thành công')
+  } catch (error) {
     return functions.setError(res, error.message)
   }
 }

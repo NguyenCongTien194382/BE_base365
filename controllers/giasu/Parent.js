@@ -102,7 +102,7 @@ exports.post = async (req, res) => {
                     if (pft_summary) alias = fnc.renderAlias(pft_summary);
                     let price = pft_price;
                     if (pft_price_type != 0 && pft_price_type == 2) {
-                        price = `${pft_price},${pft_end}`;
+                        price = `${pft_price}-${pft_end}`;
                     }
                     const posts = new PostFindTutor({
                         pft_id: max,
@@ -1094,7 +1094,7 @@ exports.detail = async (req, res) => {
         if (!pft_id) {
             return functions.setError(res, 'vui long dien id_lop');
         }
-        listConditions.ugs_id = idGiaSu;
+        // listConditions.ugs_id = idGiaSu;
         listConditions.pft_id = Number(pft_id);
         let user = await PostFindTutor.aggregate([
             // {$match : {ugs_id : idGiaSu , pft_id: pft_id }},
@@ -1278,6 +1278,7 @@ exports.listClass = async (req, res) => {
                     city_id: 1,
                     pft_detail: '$pft_detail',
                     pft_status: '$pft_status',
+                    pft_address: '$pft_address',
 
                     id_mon_hoc: '$infoSubject.as_id',
                     ten_mon_hoc: '$infoSubject.as_name',
@@ -1288,6 +1289,7 @@ exports.listClass = async (req, res) => {
                     userName: '$infoUsers.userName',
                     idPhuHuynh: '$infoUsers.idGiaSu',
                     avatarUser: '$infoUsers.avatarUser',
+                    address: '$infoUsers.address',
                     ngay_tao: '$infoUsers.updatedAt',
                     emailContact: '$infoUsers.emailContact',
                     phone: '$infoUsers.phone',
@@ -1586,7 +1588,7 @@ exports.listSaved = async (req, res) => {
                         IdTeach: '$infoUsers.idGiaSu',
                         userNameTeach: '$infoUsers.userName',
                         ugs_address: '$infoUsers.address',
-                        as_id: '$infoUsers.as_id',
+                        as_id: '$infoUsers.inforGiaSu.as_id',
                     },
                 },
                 {
@@ -1625,14 +1627,14 @@ exports.QLCParent = async (req, res) => {
         const limit = pageSize;
         if (idGiaSu) {
             let listConditions = {};
-            listConditions.st_pr_id = idGiaSu;
-            let [countPost, countSaved, countViews, countInvite, result] = await Promise.all([
+            listConditions.st_pr_id = idGiaSu
+            let [countPost, countSaved, countViews, countInvite, result, result1] = await Promise.all([
                 //Tin đã đăng
                 PostFindTutor.countDocuments({ ugs_id: idGiaSu }),
-                //Gia sư đã lưu
+                //Gia sư đã lưu 
                 SaveTeach.countDocuments({ st_pr_id: idGiaSu }),
                 //Lượt xem hồ sơ
-                Users.findOne({ idGiaSu: idGiaSu, 'inforGiaSu.ugs_ft': 2 }).select('inforGiaSu.ugs_view -_id').lean(),
+                Users.findOne({ idGiaSu: idGiaSu, "inforGiaSu.ugs_ft": 2 }).select("inforGiaSu.ugs_view -_id").lean(),
                 //Gia sư mời dạy
                 InviteTeach.countDocuments({ ugs_parent: idGiaSu, type_invite_suggest: 0 }),
                 InviteTeach.aggregate([
@@ -1640,49 +1642,88 @@ exports.QLCParent = async (req, res) => {
                     { $sort: { su_id: -1 } },
                     {
                         $lookup: {
-                            from: 'Users',
-                            localField: 'ugs_teach',
-                            foreignField: 'idGiaSu',
-                            as: 'infoUsers',
-                        },
+                            from: "Users",
+                            localField: "ugs_teach",
+                            foreignField: "idGiaSu",
+                            as: "infoUsers"
+                        }
                     },
-                    { $unwind: { path: '$infoUsers', preserveNullAndEmptyArrays: true } },
+                    { $unwind: { path: "$infoUsers", preserveNullAndEmptyArrays: true } },
 
                     {
                         $lookup: {
-                            from: 'GS_post_find_tutor',
-                            localField: 'it_class_code',
-                            foreignField: 'pft_id',
-                            as: 'post',
-                        },
+                            from: "GS_post_find_tutor",
+                            localField: "it_class_code",
+                            foreignField: "pft_id",
+                            as: "post"
+                        }
                     },
-                    { $unwind: { path: '$post', preserveNullAndEmptyArrays: true } },
+                    { $unwind: { path: "$post", preserveNullAndEmptyArrays: true } },
                     {
                         $project: {
                             su_id: 1,
 
-                            IdTeach: '$infoUsers.idGiaSu',
-                            userNameTeach: '$infoUsers.userName',
+                            "IdTeach": "$infoUsers.idGiaSu",
+                            "userNameTeach": "$infoUsers.userName",
                             ugs_teach: 1,
-                            pft_summary: '$post.pft_summary',
+                            pft_summary: "$post.pft_summary",
                             it_class_code: 1,
-                            alias: '$post.alias',
-                            ugs_address: '$infoUsers.address',
-                            pft_form: '$post.pft_form',
+                            alias: "$post.alias",
+                            "ugs_address": "$infoUsers.address",
+                            pft_form: "$post.pft_form",
                             day_invitation_teach: 1,
-                            as_id: '$infoUsers.as_id',
-                        },
+                            "as_id": "$infoUsers.inforGiaSu.as_id",
+                        }
                     },
                     {
                         $facet: {
                             paginatedResults: [{ $skip: skip }, { $limit: limit }],
-                            totalCount: [{
-                                $count: 'count',
-                            },],
-                        },
-                    },
+                            totalCount: [
+                                {
+                                    $count: 'count'
+                                }
+                            ]
+                        }
+                    }
                 ]),
-            ]);
+                SaveTeach.aggregate([
+                    // {$match : {ugs_id : idGiaSu , pft_id: pft_id }},
+                    { $match: listConditions },
+                    { $sort: { su_id: -1 } },
+                    {
+                        $lookup: {
+                            from: "Users",
+                            localField: "ugs_teach",
+                            foreignField: "idGiaSu",
+                            as: "infoUsers"
+                        }
+                    },
+                    { $unwind: { path: "$infoUsers", preserveNullAndEmptyArrays: true } },
+                    {
+                        $project: {
+                            su_id: 1,
+                            ugs_teach: 1,
+                            st_lesson: 1,
+                            st_form: 1,
+                            "IdTeach": "$infoUsers.idGiaSu",
+                            "userNameTeach": "$infoUsers.userName",
+                            "ugs_address": "$infoUsers.address",
+                            "as_id": "$infoUsers.inforGiaSu.as_id",
+                            "HinhThucHoc": "$infoUsers.inforGiaSu.ugs_tutor_style",
+                        }
+                    },
+                    {
+                        $facet: {
+                            paginatedResults: [{ $skip: skip }, { $limit: limit }],
+                            totalCount: [
+                                {
+                                    $count: 'count'
+                                }
+                            ]
+                        }
+                    }
+                ])
+            ])
             // let result1 = await SaveTeach.aggregate([
             //     // {$match : {ugs_id : idGiaSu , pft_id: pft_id }},
             //     { $match: listConditions },
@@ -1715,32 +1756,33 @@ exports.QLCParent = async (req, res) => {
             //         }
             //       }
             // ])
-            let data = {};
-            let totalCount = 0;
-            if (countViews) countViews = countViews.inforGiaSu.ugs_view ? countViews.inforGiaSu.ugs_view : 0;
+            let data = {}
+            let dataSaved = {}
+            let totalCount = 0
+            let totalSaved = 0
+            if (countViews) countViews = countViews.inforGiaSu.ugs_view ? countViews.inforGiaSu.ugs_view : 0
             if (result[0].totalCount.length > 0) {
                 data = result[0].paginatedResults;
                 totalCount = result[0].totalCount[0].count;
                 for (let i = 0; i < data.length; i++) {
+                    ;
                     // chuyển đổi dạng date
-                    data[i].day_invitation_teach = new Date(data[i].day_invitation_teach * 1000);
+                    data[i].day_invitation_teach = new Date(data[i].day_invitation_teach * 1000)
                 }
             }
-            return functions.success(res, 'lấy thành công', {
-                countPost,
-                countSaved,
-                countViews,
-                countInvite,
-                data,
-                totalCount,
-            });
+            if (result1[0].totalCount.length > 0) {
+                dataSaved = result1[0].paginatedResults;
+                totalSaved = result1[0].totalCount[0].count;
+            }
+            return functions.success(res, "lấy thành công", { countPost, countSaved, countViews, countInvite, data, dataSaved, totalCount, totalSaved })
         }
-        return functions.setError(res, 'khong tim thay nguoi dung');
+        return functions.setError(res, "khong tim thay nguoi dung")
+
     } catch (error) {
-        console.log(error);
-        return functions.setError(res, error.message);
+        console.log(error)
+        return functions.setError(res, error.message)
     }
-};
+}
 //danh sách dành cho phu huynh
 exports.homePagefilterTeach = async (req, res) => {
     try {
@@ -2365,3 +2407,137 @@ exports.homePage = async (req, res) => {
         return functions.setError(res, error.message);
     }
 };
+
+exports.UpdatePoint = async (req, res) =>{
+    try{
+        const idGiaSu = req.user.data.idGiaSu;
+        const id_teach = Number(req.body.id_teach)
+        if(id_teach){
+            const today = functions.getTimeNow()
+
+            const [checkParent, checkTeach ] = await Promise.all([
+                Users.findOne({
+                    idGiaSu : idGiaSu,
+                    "inforGiaSu.ugs_ft": 2
+                }).lean(),
+                Users.findOne({
+                    idGiaSu : Number(id_teach),
+                    "inforGiaSu.ugs_ft": 1
+                }).lean(),
+            ])
+            let total = 0 
+            if(!checkTeach){
+                return functions.setError(res, "Nhập user cho chuẩn vào, không tìm thấy :)")
+            }
+            if(checkParent) total = checkParent.inforGiaSu.point_free ? checkParent.inforGiaSu.point_free : 0 + checkParent.inforGiaSu.point_buy !== "null" ? checkParent.inforGiaSu.point_buy : 0
+            console.log(total)
+            if(total > 0) {
+                if(checkParent.inforGiaSu.point_free > 0){
+                     // cap nhat diem tru 1 cho PH
+                    const newPoint =  checkParent.inforGiaSu.point_free - 1
+                    await Users.updateOne({
+                            idGiaSu : idGiaSu,
+                            "inforGiaSu.ugs_ft": 2
+                        },{
+                            "inforGiaSu.point_free" : newPoint,
+                        })
+                        return functions.success(res , "Trừ điểm miễn phí thành công" )
+                }else if(checkParent.inforGiaSu.point_buy > 0) {
+                        // cap nhat diem tru 1 cho PH
+                       const newPoint =  checkParent.inforGiaSu.point_buy - 1
+                    await Users.updateOne({
+                            idGiaSu : idGiaSu,
+                            "inforGiaSu.ugs_ft": 2
+                        },{
+                            "inforGiaSu.point_free" : newPoint,
+                        })
+                        return functions.success(res , "Trừ điểm mất phí thành công" )
+                    }
+                }
+                return functions.setError(res, "Hết điểm , khỏi xem")
+            }
+            return functions.setError(res, "Nhập thiếu trường")
+
+    }catch(e){
+        console.log(e)
+        return functions.setError(res, e.message)
+    }
+}
+
+exports.UpdateViews = async (req, res) =>{
+    try{
+        const idGiaSu = req.user.data.idGiaSu;
+        const id_teach = Number(req.body.id_teach)
+        if(id_teach){
+            const today = functions.getTimeNow()
+
+            const [checkParent, checkTeach, maxTB, maxSeen ] = await Promise.all([
+                Users.findOne({
+                    idGiaSu : idGiaSu,
+                    "inforGiaSu.ugs_ft": 2
+                }).lean(),
+                Users.findOne({
+                    idGiaSu : Number(id_teach),
+                    "inforGiaSu.ugs_ft": 1
+                }).lean(),
+                functions.getMaxIdByField(Notification, "noti_id"),
+                functions.getMaxIdByField(SeeUser, "su_id"),
+            ])
+            let total = 0 
+            if(!checkTeach){
+                return functions.setError(res, "Nhập user cho chuẩn vào, không tìm thấy :)")
+            }
+            //cập nhật view
+            const newView =  checkParent.inforGiaSu.ugs_view + 1
+            await Users.updateOne({
+                idGiaSu : Number(id_teach),
+                "inforGiaSu.ugs_ft": 1
+            },{
+                "inforGiaSu.ugs_view": newView,
+            })
+            //ktra bang da xem
+            const check_daxem = await SeeUser.findOne({
+                ugs_parent : idGiaSu,
+                ugs_teach : id_teach,
+            }).lean()
+            if(!check_daxem){
+                // neu khong có insert
+                let insert = new SeeUser({
+                    su_id : maxSeen,
+                    ugs_parent : idGiaSu,
+                    ugs_teach : id_teach,
+                    su_today : today,
+                    su_status : 1,
+                    type : 1,
+                })
+                await insert.save()
+            }else{ 
+                // có cập nhật 
+                await SeeUser.updateOne({
+                    su_id : check_daxem.su_id
+                },{
+                    su_status : 1,
+                    type : 1,
+                    su_today : today,
+                })
+            }
+            //add thong bao
+            let TB = new Notification({
+                noti_id: maxTB,
+                ugs_tutor: id_teach,
+                ugs_parent: idGiaSu,
+                pft_id: "",
+                type: 7,
+                noti_date: today,
+            })
+            await TB.save()
+            return functions.success(res , "cộng lượt xem thành công" )
+
+        }
+        return functions.setError(res, "Nhập thiếu trường")
+
+    }catch(e){
+        console.log(e)
+        return functions.setError(res, e.message)
+    }
+}

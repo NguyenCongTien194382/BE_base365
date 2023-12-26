@@ -15,6 +15,7 @@ const City = require('../../models/freelancer/City');
 const City2 = require('../../models/freelancer/City2');
 const Users = require('../../models/Users');
 const tmp = require('../../models/freelancer/tmp')
+const listThongBao = require('../../models/freelancer/ListThongBao')
 
 exports.getListCategory = async (req, res, next) => {
     try {
@@ -153,7 +154,6 @@ exports.getListJob = async (req, res, next) => {
         let total_promise = functions.findCount(Jobs, condition);
         let listSkill_promise = Skills.find({}, { id_skill: 1, skill_name: 1, category_id: 1 }).lean();
 
-
         const [listJob, total, listSkill] = await Promise.all([
             listJob_promise,
             total_promise,
@@ -174,15 +174,22 @@ exports.getListJob = async (req, res, next) => {
                 if (skill) listJob[i].arr_skillname = skill.skill_name;
             }
         }
-        // let arr_cty = [1, 45, 27, 26];
-        // let total_job_city = [];
-        // for (let i = 0; i < arr_cty.length; i++) {
-        //     let total = await functions.findCount(Jobs, { work_city: arr_cty[i] });
-        //     total_job_city.push(total);
-        // }
+
         return functions.success(res, "get list job working success", { total, total_job_city: 0, data: listJob });
     } catch (error) {
         return functions.setError(res, error.message);
+    }
+}
+
+exports.jobCity = async (req, res) => {
+    try {
+        let arr_cty = [1, 45, 27, 26];
+        const data = await Promise.all(arr_cty.map(item => (
+            functions.findCount(Jobs, { work_city: item })
+        )));
+        return functions.success(res, 'get data success', { data })
+    } catch (error) {
+        return functions.setError(res, error.message)
     }
 }
 
@@ -190,7 +197,6 @@ exports.getListJob = async (req, res, next) => {
 exports.detailJob = async (req, res, next) => {
     try {
         let id = req.body.id;
-        console.log("🚀 ~ file: home.js:192 ~ exports.detailJob= ~ id:", id)
         if (id) {
             id = Number(id);
             let detailJob = await Jobs.aggregate([
@@ -282,7 +288,7 @@ exports.detailJob = async (req, res, next) => {
                 ntd_id = detailJob.user_id;
                 //tra ve link day du
                 detailJob.linkAvatar = flcService.getLinkAvatar(detailJob.createdAt, detailJob.avatarUser);
-                detailJob.linkLogo = flcService.getLink(detailJob.company_logo);
+                detailJob.linkLogo = flcService.getLinkAvatarCompany(detailJob.company_logo);
                 detailJob.linkFileDes = flcService.getLink(detailJob.work_file_des);
 
                 //danh sach ky nang
@@ -353,7 +359,6 @@ exports.detailJob = async (req, res, next) => {
                         let average = sum / listFlcPriceSet[i].Vote.length;
                         listFlcPriceSet[i].averageStar = average;
                     }
-
                     //lay ra ten cua nganh
                     let arr_cate = listFlcPriceSet[i].category_id || '1, 2';
                     if (arr_cate) {
@@ -365,7 +370,6 @@ exports.detailJob = async (req, res, next) => {
                         }
                         listFlcPriceSet[i].arr_category = arr_category.join(', ');
                     }
-
                     //lay ra link avatar
                     listFlcPriceSet[i].linkAvatar = flcService.getLinkAvatar(listFlcPriceSet[i].createdAt, listFlcPriceSet[i].avatar);
                 }
@@ -388,7 +392,7 @@ exports.getListFreelancer = async (req, res, next) => {
         page = Number(page);
         pageSize = Number(pageSize);
         const skip = (page - 1) * pageSize;
-        let ntd_id = (req.user && req.user.data && req.user.data.idTimViec365) ? req.user.data.idTimViec365 : null;
+        let ntd_id = await flcService.checkTokenUser(req, res, next);
 
         let condition = { idTimViec365: { $gt: 0 }, type: 0, "inforFreelancer.hide_uv": { $ne: 1 } };
         // let condition = { idTimViec365: { $gt: 0 }, type: 0 };
@@ -450,6 +454,8 @@ exports.getListFreelancer = async (req, res, next) => {
                     "skill_detail": "$inforFreelancer.skill_detail",
                     "cit_name": "$City.cit_name",
                     "dis_name": "$District.cit_name",
+                    "ten_file": "$inforFreelancer.ten_file",
+                    "file": "$inforFreelancer.file",
                 }
             },
         ]);
@@ -466,7 +472,6 @@ exports.getListFreelancer = async (req, res, next) => {
             listCategory_promise,
             listSkill_promise,
         ])
-        // console.log(listSkill)
         for (let i = 0; i < listFreelancer.length; i++) {
             //linh vuc: IT, DESIGN
             let arr_cate = listFreelancer[i].category_id;
@@ -493,11 +498,9 @@ exports.getListFreelancer = async (req, res, next) => {
                 listFreelancer[i].arr_skillname = arr_skillname;
             }
             let flc_id = listFreelancer[i].idTimViec365;
-            //lay ra tong lan dat gia
             let total_datgia_promise = functions.findCount(PriceSetting, { flc_id: listFreelancer[i].idTimViec365 });
             let user_view_promise = UserView.findOne({ employer_id: ntd_id, flc_id: flc_id }, { allow_view: 1 });
             let saveFlc_promise = functions.findCount(SaveFlc, { employer_id: ntd_id, flc_id: flc_id });
-
             const [
                 total_datgia,
                 user_view,
@@ -554,7 +557,7 @@ exports.getListFreelancer = async (req, res, next) => {
                 delete freelancer.email;
             }
             freelancer.status_lienhe = status_lienhe;
-
+            if (freelancer.file && freelancer.file != '') freelancer.file = `https://storage.timviec365.vn/timviec365/${freelancer.file}`;
             //lay ra so sao danh gia
             let vote = await Vote.find({ flc_id: flc_id, type_vote: 1 }, { star: 1 }).lean();
             let average = 0;
@@ -584,6 +587,32 @@ exports.getListFreelancer = async (req, res, next) => {
     }
 };
 
+exports.coutFreelancer = async (req, res, next) => {
+    try {
+        let { keyword, city, category, skill } = req.body;
+        let condition = { idTimViec365: { $gt: 0 }, type: 0, "inforFreelancer.hide_uv": { $ne: 1 } };
+        // let condition = { idTimViec365: { $gt: 0 }, type: 0 };
+
+        if (keyword) {
+            condition.userName = new RegExp(keyword, 'i');
+        }
+        if (city) {
+            condition.city = Number(city);
+        }
+        if (category) {
+            condition["inforFreelancer.category_id"] = new RegExp(`\\b${category}\\b`);
+        }
+        if (skill) {
+            condition["inforFreelancer.skill_detail"] = new RegExp(`\\b${skill}\\b`);
+        }
+        const total = await Users.countDocuments(condition);
+        return functions.success(res, 'success', { total })
+    } catch (error) {
+        return functions.setError(res, error.message)
+    }
+}
+
+
 exports.getJobByCity = async (req, res, next) => {
     try {
         let arr_cty = [1, 45, 27, 26];
@@ -601,7 +630,7 @@ exports.getJobByCity = async (req, res, next) => {
 exports.detailCompany = async (req, res, next) => {
     try {
         let ntd_id = req.body.id;
-        let flc_id = (req.user && req.user.data && req.user.data.idTimViec365) ? req.user.data.idTimViec365 : null;
+        let flc_id = await flcService.checkTokenUser(req, res, next)
         if (ntd_id) {
             ntd_id = Number(ntd_id);
             let ntd = await Users.aggregate([
@@ -733,17 +762,11 @@ exports.detailCompany = async (req, res, next) => {
 // api đăng kí
 exports.Register = async (req, res) => {
     try {
-        const { Email, password, repassword, name, phone, birthday, salary_type, gender, city, district, salary, nganhNghe, chiTietNganhNghe, type, salary_to, salary_from } = req.body;
-        if (Email && password && repassword && name && phone && birthday && gender && city && district && type) {
+        const { password, repassword, name, phone, birthday, salary_type, gender, city, district, salary, nganhNghe, chiTietNganhNghe, type, salary_to, salary_from } = req.body;
+        if (password && repassword && name && phone && birthday && gender && city && district && type) {
             let checkType = 'user';
             if (type == 1) checkType = 'ntd';
-            const checkEmail_promise = Users.findOne({ email: Email, type }, { _id: 1 }).lean();
-            const checkPhone_promise = Users.findOne({ phoneTK: phone, type }, { _id: 1 }).lean();
-            const [checkEmail, checkPhone, idmax] = await Promise.all([
-                checkEmail_promise,
-                checkPhone_promise,
-            ])
-            if (checkEmail) return functions.setError(res, 'Email đã tồn tại', 409)
+            const checkPhone = await Users.findOne({ phoneTK: phone, type }, { _id: 1 }).lean();
             if (checkPhone) return functions.setError(res, 'Số điện thoại đã tồn tại', 409)
             const id = new Date().getTime();
             await tmp.create({
@@ -751,8 +774,6 @@ exports.Register = async (req, res) => {
                 userName: name,
                 phoneTK: await functions.checkPhoneNumber(phone) ? phone : null,
                 phone: await functions.checkPhoneNumber(phone) ? phone : null,
-                emailContact: await functions.checkEmail(Email) ? Email : null,
-                email: await functions.checkEmail(Email) ? Email : null,
                 password: functions.createMd5(password),
                 city,
                 district,
@@ -770,7 +791,76 @@ exports.Register = async (req, res) => {
         }
         return functions.setError(res, 'missing data', 400);
     } catch (error) {
-        console.log("🚀 ~ file: home.js:797 ~ exports.Register= ~ error:", error)
+        return functions.setError(res, error.message)
+    }
+}
+
+exports.createToken = async (req, res) => {
+    try {
+        const user = await Users.findOne({
+            _id: 449973
+        }, { _id: 1, idTimViec365: 1, userName: 1, createdAt: 1, avatarUser: 1, type: 1 }).lean();
+        const token = await functions.createToken(user, '1y');
+        return functions.success(res, 'success', { token })
+    } catch (error) {
+        return functions.setError(res, error.message)
+    }
+}
+
+exports.getNotifi = async (req, res) => {
+    try {
+        const id = req.user.data.idTimViec365;
+        const response = await listThongBao.aggregate([
+            { $match: { id_nguoi_nhan: id } },
+            { $sort: { time_tb: -1 } },
+            { $limit: 20 },
+            {
+                $lookup: {
+                    from: "FLC_ThongBao",
+                    localField: "td_loai_tb",
+                    foreignField: "tb_id",
+                    as: "thongbao"
+                }
+            },
+            {
+                $lookup: {
+                    from: "Users",
+                    localField: "id_nguoi_gui",
+                    foreignField: "idTimViec365",
+                    as: "users"
+                }
+            },
+            { $unwind: "$users" },
+            { $unwind: "$thongbao" },
+            {
+                $project: {
+                    avatarUser: "$users.avatarUser",
+                    createdAt: "$users.createdAt",
+                    userName: "$users.userName",
+                    thongbao: "$thongbao.ten_tb",
+                    time_tb: 1
+                }
+            }
+        ]);
+        for (let i = 0; i < response.length; i++) {
+            const element = response[i];
+            if (element.avatar != '') {
+                if (req.user.data.type != 1) element.avatar = flcService.getLinkAvatar(element.createdAt, element.avatarUser)
+                else element.avatar = flcService.getLinkAvatarCompany(element.createdAt, element.avatarUser)
+            }
+        }
+        return functions.success(res, 'thành công', { data: response })
+    } catch (error) {
+        return functions.setError(res, error.message)
+    }
+}
+
+exports.deleteNotifi = async (req, res) => {
+    try {
+        const id = req.user.data.idTimViec365;
+        await listThongBao.deleteMany({ id_nguoi_nhan: id });
+        return functions.success(res, 'success')
+    } catch (error) {
         return functions.setError(res, error.message)
     }
 }

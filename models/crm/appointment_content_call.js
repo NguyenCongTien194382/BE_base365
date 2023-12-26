@@ -2,8 +2,7 @@ const mongoose = require("mongoose");
 const appointment_content_call = new mongoose.Schema({
     id: {
         type: Number,
-        require: true,
-        unique: true,
+        default: 0
     },
     id_appointment: {
         type: Number,

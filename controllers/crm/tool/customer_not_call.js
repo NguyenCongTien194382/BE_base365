@@ -8,7 +8,7 @@ const CRM_site_infor = require("../../../models/crm/site_infor");
 const functions = require("../../../services/functions");
 const axios = require("axios");
 const FormData = require('form-data');
-
+const CRM_customer_group = require('../../../models/crm/Customer/customer_group');
 const io = require('socket.io-client');
 
 const socket = io.connect('http://43.239.223.142:3000', {
@@ -163,6 +163,7 @@ const updateAndSaveHistory = async(emp_id_old, customer_id, adm_bophan, last_sta
                     await Customer.updateOne({ cus_id: customer_id }, {
                         $set: {
                             emp_id: emp_id_new,
+                            updated_at: functions.getTimeNow(),
                             last_scan_called: functions.getTimeNow(),
                             last_time_called: functions.getTimeNow()
                         }
@@ -231,7 +232,7 @@ const updateAndSaveHistory = async(emp_id_old, customer_id, adm_bophan, last_sta
                                 Message: `Khách hàng với ID CRM: ${customer_id},
                                          email: ${info_customer.email },
                                          số điện thoại: ${info_customer.phone_number},
-                                         đã được chuyển tới giỏ của bạn
+                                         đã được chuyển tới giỏ của bạn bằng tool chuyển giỏ
                                          `
                             };
                             let data2 = {
@@ -242,27 +243,13 @@ const updateAndSaveHistory = async(emp_id_old, customer_id, adm_bophan, last_sta
                                 Message: `Khách hàng với ID CRM: ${customer_id},
                                 email: ${info_customer.email },
                                 số điện thoại: ${info_customer.phone_number},
-                                đã được chuyển tới giỏ của bạn
+                                đã được chuyển tới giỏ của bạn bằng tool chuyển giỏ
                                 `
                             };
                             await SendMess(data2);
                             await SendMess(data1);
                         }
 
-                    } else if (from == 'tv365com') {
-                        const FormData = require('form-data');
-                        let data = new FormData();
-                        data.append('cpn_id', Number(id_cus_from));
-                        data.append('emp_id', emp_id_new);
-
-                        let config = {
-                            method: 'post',
-                            maxBodyLength: Infinity,
-                            url: 'https://work247.vn/api202/transfer_admin.php',
-                            data: data
-                        };
-
-                        await axios.request(config);
                     } else if (from == 'tv365_error') { // ntd đăng ký lỗi 
 
                         console.log("Gửi tin nhắn chuyển giỏ ntd đăng ký lỗi")
@@ -272,7 +259,7 @@ const updateAndSaveHistory = async(emp_id_old, customer_id, adm_bophan, last_sta
                         if (user_cu1) {
                             let user_cu = await Users.findOne({ idQLC: user_cu1.emp_id_chat }, { idQLC: 1, _id: 1, userName: 1 }).lean();
                             if (user_cu) {
-                                console.log(user_cu1.adm_bophan, user_cu._id, user_cu.idQLC, user_cu.userName, `Khách hàng với ID CRM: ${customer_id} đã được chuyển khỏi giỏ của bạn`);
+
                                 let info_customer = await Customer.findOne({ cus_id: Number(customer_id) }).lean();
                                 let data1 = {
                                     ContactId: user_cu._id,
@@ -316,7 +303,7 @@ const updateAndSaveHistory = async(emp_id_old, customer_id, adm_bophan, last_sta
                                 Message: `Khách hàng với ID CRM: ${customer_id},
                                              email: ${info_customer.email },
                                              số điện thoại: ${info_customer.phone_number},
-                                             đã được chuyển tới giỏ của bạn
+                                             đã được chuyển tới giỏ của bạn bằng tool chuyển giỏ
                                              `
                             };
                             let data2 = {
@@ -327,7 +314,7 @@ const updateAndSaveHistory = async(emp_id_old, customer_id, adm_bophan, last_sta
                                 Message: `Khách hàng với ID CRM: ${customer_id},
                                     email: ${info_customer.email },
                                     số điện thoại: ${info_customer.phone_number},
-                                    đã được chuyển tới giỏ của bạn
+                                    đã được chuyển tới giỏ của bạn bằng tool chuyển giỏ
                                     `
                             };
                             await SendMess(data2);
@@ -335,25 +322,33 @@ const updateAndSaveHistory = async(emp_id_old, customer_id, adm_bophan, last_sta
                         }
                     } else {
                         // Chuyển giỏ các site khác chưa bật vì bên Thanh Long chưa cập nhật VIP 1 lượt 
-                        // let check_customer = customer;
-                        // let site_infor = await CRM_site_infor.findOne({
-                        //     cus_from: String(check_customer.cus_from)
-                        // })
-                        // if (site_infor) {
-                        //     await axios({
-                        //         method: 'post',
-                        //         url: site_infor.link_update_cart,
-                        //         data: {
-                        //             cus_from_id: check_customer.id_cus_from,
-                        //             emp_id: check_customer.emp_id,
-                        //             userName: check_customer.name,
-                        //             phone: check_customer.phone_number,
-                        //             email: check_customer.email,
-                        //             address: check_customer.address,
-                        //         },
-                        //         headers: { 'Content-Type': 'multipart/form-data' },
-                        //     });
-                        // }
+                        let message = `Khách hàng với ID CRM: ${customer.cus_id},
+                            ID: ${customer.id_cus_from}
+                            email: ${customer.email },
+                            số điện thoại: ${customer.phone_number},
+                            đã được chuyển tới giỏ của bạn bằng tool chuyển giỏ
+                            vào lúc ${new Date().getHours()}:${new Date().getMinutes()}
+                            `
+                        let check_customer = customer;
+                        let site_infor = await CRM_site_infor.findOne({
+                            cus_from: String(check_customer.cus_from)
+                        })
+                        if (site_infor) {
+                            await axios({
+                                method: 'post',
+                                url: site_infor.link_update_cart,
+                                data: {
+                                    cus_from_id: check_customer.id_cus_from,
+                                    emp_id: emp_id_new,
+                                    userName: check_customer.name,
+                                    phone: check_customer.phone_number,
+                                    email: check_customer.email,
+                                    address: check_customer.address,
+                                },
+                                headers: { 'Content-Type': 'multipart/form-data' },
+                            });
+                        };
+                        functions.sendMessageToChuyenVienQlc(emp_id_new, message)
                     };
 
 
@@ -368,6 +363,13 @@ const updateAndSaveHistory = async(emp_id_old, customer_id, adm_bophan, last_sta
                         last_time_called: last_time_called,
                         time_tranfer: functions.getTimeNow()
                     }).save();
+                } else {
+                    console.log("Cập nhật trạng thái gọi");
+                    await Customer.updateMany({ phone_number: phone }, {
+                        $set: {
+                            last_status_called: "ANSWERED"
+                        }
+                    })
                 }
             }
         }
@@ -379,81 +381,8 @@ const updateAndSaveHistory = async(emp_id_old, customer_id, adm_bophan, last_sta
 
 }
 
-const updateAndSaveHistoryAlert = async(emp_id_old, customer_id, adm_bophan, last_status_called, last_time_called, id_cus_from, emp_id_new, cus_from = 'tv365') => {
-        try {
-            let from = cus_from;
-            let customer = await Customer.findOne({ cus_id: Number(customer_id) }).lean();
-            if (customer) {
-                let phone = customer.phone_number;
-                if ((!phone) || (isNaN(phone))) {
-                    phone = customer.email
-                };
-                // Kiểm tra xem có cuộc gọi phát sinh trong ngày hay không  
-                let response = await axios({
-                    method: "post",
-                    url: "https://voip.timviec365.vn/api/CheckPhoneAnswer",
-                    data: {
-                        phone_number: phone
-                    },
-                    headers: { "Content-Type": "multipart/form-data" }
-                });
-                if (response && response.data) {
-                    if (!response.data.data) {
 
-                        // Cập nhật bên NTD gốc trước
-                        if (from == 'tv365') {
-
-
-                            let user_cu1 = await AdminUser.findOne({
-                                emp_id: emp_id_old
-                            }).lean();
-                            if (user_cu1) {
-                                let user_cu = await Users.findOne({ idQLC: user_cu1.emp_id_chat }, { idQLC: 1, _id: 1, userName: 1 }).lean();
-                                let user_nhan = await Users.findOne({ idQLC: Number(emp_id_new) }).lean();
-                                if (user_cu) {
-
-                                    let info_customer = await Customer.findOne({ cus_id: Number(customer_id) }).lean();
-                                    let data1 = {
-                                        ContactId: user_cu._id,
-                                        // ContactId: user_cu.idQLC,
-                                        SenderID: 1192,
-                                        MessageType: 'text',
-                                        Message: `Khách hàng với ID CRM: ${customer_id},
-                                    ID: ${info_customer.id_cus_from}
-                                    email: ${info_customer.email },
-                                    số điện thoại: ${info_customer.phone_number},
-                                    sắp được chuyển khỏi giỏ của bạn hãy nhanh chóng kiểm tra CRM
-                                    `
-                                    }
-                                    let data2 = {
-                                        ContactId: 10031577,
-
-                                        SenderID: 1192,
-                                        MessageType: 'text',
-                                        Message: `Khách hàng với ID CRM: ${customer_id},
-                                    email: ${info_customer.email },
-                                    số điện thoại: ${info_customer.phone_number},
-                                    sắp được chuyển 
-                                    `
-                                    }
-                                    await SendMess(data1);
-                                    await SendMess(data2);
-                                }
-                            }
-
-
-                        }
-                    }
-                }
-                return true;
-            }
-        } catch (e) {
-            console.log("updateAndSaveHistory", e);
-            return false;
-        }
-
-    }
-    // cập nhật lại để kinh doanh gọi tiếp 
+// cập nhật lại để kinh doanh gọi tiếp 
 const CallAgain = async(time) => {
     try {
         await Customer.updateMany({
@@ -480,7 +409,6 @@ const customer_not_call = async() => {
         //await functions.sleep(5 * 60 * 1000);
         console.log("Bắt đầu", new Date());
         while (true) {
-            //await functions.sleep(60000);
             const date_now = functions.convertDate(null, true);
 
             // test với ngày hôm qua 
@@ -488,11 +416,11 @@ const customer_not_call = async() => {
             // console.log("date_now", date_now);
 
             // Ca sáng
-            const start_time_in_morning = functions.convertTimestamp(`${date_now} 08:30`);
+            const start_time_in_morning = functions.convertTimestamp(`${date_now} 08:05`);
             const end_time_in_morning = functions.convertTimestamp(`${date_now} 11:30`);
 
             // Ca chiều
-            const start_time_in_afternoon = functions.convertTimestamp(`${date_now} 14:30`);
+            const start_time_in_afternoon = functions.convertTimestamp(`${date_now} 14:05`);
             const end_time_in_afternoon = functions.convertTimestamp(`${date_now} 18:00`);
 
             // Lấy thứ trong tuần -> Nếu là chủ nhật thì ko cho chạy
@@ -503,16 +431,34 @@ const customer_not_call = async() => {
             const inforHHP = functions.inForHHP();
             const id_dang_thi_hang = inforHHP.id_dang_thi_hang;
             const company_id = inforHHP.company_id;
-            const time = 20000; // 2 phút quét 1 lần
+            const time = 5 * 60000; // 2 phút quét 1 lần
 
             const timeStamp = functions.getTimeNow();
             const time_scan = timeStamp - 3600 * 30;
             // Thời gian 30p trc
-            const last_time_called_stone = new Date().getTime() / 1000 - 10 * 60;
+            const last_time_called_stone = new Date().getTime() / 1000 - 5 * 60;
             if (((start_time_in_morning < timeStamp && timeStamp < end_time_in_morning) || (start_time_in_afternoon < timeStamp && timeStamp < end_time_in_afternoon)) && current_day != 0) {
                 //if (true) {
-                // Lấy ra danh sách khách hàng chưa được gọi hoặc có gọi nhưng không nghe máy tính từ thời điểm ngày 04/11/2023
-
+                // Lấy ra danh sách nhân viên 
+                let group = await CRM_customer_group.findOne({ gr_id: 429 }).lean();
+                let list_emp_id = group.emp_id.split(",").map(Number);
+                list_emp_id = list_emp_id.filter((e) => e != 0);
+                let list_temp = [];
+                for (let i = 0; i < list_emp_id.length; i++) {
+                    let response = await axios({
+                        method: 'post',
+                        url: 'https://api.timviec365.vn/api/qlc/shift/list_shift_user_new',
+                        data: {
+                            u_id: list_emp_id[i],
+                            c_id: Number(group.company_id)
+                        },
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                    if (response && response.data && response.data.data && response.data.data.shift && response.data.data.shift.length) {
+                        list_temp.push(list_emp_id[i]);
+                    }
+                }
+                list_emp_id = list_temp;
                 const search = {
                     emp_id: { $nin: [id_dang_thi_hang, 0] }, // Bỏ qua khách của Hằng vì là khách chuyển đổi số
                     company_id, // Lấy theo ID công ty
@@ -521,7 +467,7 @@ const customer_not_call = async() => {
                             updated_at: { $lte: last_time_called_stone }
                         },
                         {
-                            updated_at: { $gte: start_time_in_morning - 8 * 3600 }
+                            updated_at: { $gte: start_time_in_morning - 8 * 3600 } // cho đến khi kết thúc ca của ngày hôm trước
                         },
                     ],
                     cus_from: { $nin: ['uv365'] }, // Bỏ quả nguồn ứng viên, nguồn từ admin thêm mới
@@ -553,14 +499,19 @@ const customer_not_call = async() => {
                     .sort({ last_time_called: -1 })
                     // .limit(10)
                     .lean();
-                console.log("list", list);
+                // console.log("list", list);
                 // Lọc bỏ các NTD đang vip
                 const filterListCustomer = await filterCustomer(list);
-                console.log("filterListCustomer", filterListCustomer)
-                    // Lấy danh sách kinh doanh
+                console.log("filterListCustomer", filterListCustomer);
+
+
+                // Lấy danh sách kinh doanh
                 let listKD = await AdminUser.find({
-                        adm_bophan: { $ne: 0 },
-                        adm_ntd: 1
+                        $and: [{
+                            emp_id: { $in: list_emp_id }
+                        }, {
+                            emp_id: { $ne: 0 }
+                        }]
                     })
                     .select("adm_bophan emp_id")
                     .sort({ adm_bophan: 1 })
@@ -605,10 +556,12 @@ const customer_not_call = async() => {
                     }
                 }
                 console.log("Xong, chờ 2p");
+                await functions.sleep(60000);
             } else {
                 console.log("Ngoài giờ làm việc, không xử lý");
+                await functions.sleep(60000);
             }
-            await functions.sleep(time);
+
         }
         return true;
     } catch (error) {
@@ -695,148 +648,3 @@ const ToolHandleUserVip = async() => {
 }
 
 ToolHandleUserVip()
-
-
-const customer_not_call_alert = async() => {
-    try {
-        //await functions.sleep(5 * 60 * 1000);
-        console.log("Bắt đầu", new Date());
-        while (true) {
-            //await functions.sleep(60000);
-            const date_now = functions.convertDate(null, true);
-
-            // test với ngày hôm qua 
-            // const date_now = "2023/11/09";
-            // console.log("date_now", date_now);
-
-            // Ca sáng
-            const start_time_in_morning = functions.convertTimestamp(`${date_now} 08:30`);
-            const end_time_in_morning = functions.convertTimestamp(`${date_now} 11:30`);
-
-            // Ca chiều
-            const start_time_in_afternoon = functions.convertTimestamp(`${date_now} 14:30`);
-            const end_time_in_afternoon = functions.convertTimestamp(`${date_now} 18:00`);
-
-            // Lấy thứ trong tuần -> Nếu là chủ nhật thì ko cho chạy
-            const date = new Date();
-            const current_day = date.getDay();
-
-            // Thông tin công ty
-            const inforHHP = functions.inForHHP();
-            const id_dang_thi_hang = inforHHP.id_dang_thi_hang;
-            const company_id = inforHHP.company_id;
-            const time = 20000; // 2 phút quét 1 lần
-
-            const timeStamp = functions.getTimeNow();
-            const time_scan = timeStamp - 3600 * 30;
-            // Thời gian 30p trc
-            const last_time_called_stone = new Date().getTime() / 1000 - 5 * 60;
-            if (((start_time_in_morning < timeStamp && timeStamp < end_time_in_morning) || (start_time_in_afternoon < timeStamp && timeStamp < end_time_in_afternoon)) && current_day != 0) {
-                //if (true) {
-                // Lấy ra danh sách khách hàng chưa được gọi hoặc có gọi nhưng không nghe máy tính từ thời điểm ngày 04/11/2023
-
-                const search = {
-                    emp_id: { $nin: [id_dang_thi_hang, 0] }, // Bỏ qua khách của Hằng vì là khách chuyển đổi số
-                    company_id, // Lấy theo ID công ty
-                    type: 2, // type = 2 là công ty
-                    $and: [{
-                            updated_at: { $lte: last_time_called_stone }
-                        },
-                        {
-                            updated_at: { $gte: start_time_in_morning - 8 * 3600 }
-                        },
-                    ],
-                    cus_from: { $nin: ['uv365'] }, // Bỏ quả nguồn ứng viên, nguồn từ admin thêm mới
-                    //is_new_customer: { $in: [0, null] }, // Những NTD đăng ký mới mà chưa được gọi, nếu gọi rồi thì giá trị = 1
-                    from_admin: 0, // Bỏ qua khách được tạo từ admin, nếu được tạo từ admin thì khách đấy đã được gọi trước đó và add zalo rồi nên không gọi bằng máy bàn nữa
-                    // group_id: { $nin: [453, 454, 438] }, // Bỏ qua các NTD đăng nhập, đăng tin, không quan tâm vì đã add zalo rồi nên không gọi nữa
-                    last_time_called: { $lte: last_time_called_stone }, // Lấy khách hàng mà không nghe máy hoặc không đã gọi từ 30p trước
-                    last_scan_called: { $lte: last_time_called_stone }, // Được quét cách 30p, sau 30p quét lại
-                    last_status_called: { $in: ["NOCALL", "NOANSWERED"] }, // Không gọi, không trả lời
-
-                    //cus_id: 2289376
-                    // mặc định là không gọi 
-                };
-
-                //await CallAgain(functions.convertTimestamp(`${date_now} 00:00`));
-
-                const list = await Customer.find(search, {
-                        cus_from: 1,
-                        id_cus_from: 1,
-                        cus_id: 1,
-                        emp_id: 1,
-                        last_time_called: 1,
-                        last_status_called: 1,
-                        group_id: 1,
-                        created_at: 1,
-                        last_scan_called: 1
-                    })
-                    .sort({ last_time_called: -1 })
-                    // .limit(10)
-                    .lean();
-                console.log("list", list);
-                // Lọc bỏ các NTD đang vip
-                const filterListCustomer = await filterCustomer(list);
-                console.log("filterListCustomer", filterListCustomer)
-                    // Lấy danh sách kinh doanh
-                let listKD = await AdminUser.find({
-                        adm_bophan: { $ne: 0 },
-                        adm_ntd: 1
-                    })
-                    .select("adm_bophan emp_id")
-                    .sort({ adm_bophan: 1 })
-                    .lean();
-
-                const max_kd = listKD[listKD.length - 1].adm_bophan;
-                for (let i = 0; i < filterListCustomer.length; i++) {
-                    const customer = filterListCustomer[i];
-                    const queryHistoryTransferNotCall = await HistoryTransferNotCall.findOne({}, { emp_id_new: 1, stt: 1 }).sort({ _id: -1 });
-                    if (!queryHistoryTransferNotCall) {
-                        const emp_id_old = customer.emp_id,
-                            customer_id = customer.cus_id,
-                            adm_bophan = listKD[0].adm_bophan,
-                            last_status_called = customer.last_status_called,
-                            last_time_called = customer.last_time_called,
-                            id_cus_from = customer.id_cus_from,
-                            emp_id_new = listKD[0].emp_id,
-                            cus_from = customer.cus_from;
-                        await updateAndSaveHistoryAlert(emp_id_old, customer_id, adm_bophan, last_status_called, last_time_called, id_cus_from, emp_id_new, cus_from);
-                    } else {
-                        // lấy vị trí của usc_kd trong danh sách adm_bophan
-                        const position_usc_kd = listKD.findIndex(item => item.adm_bophan === queryHistoryTransferNotCall.stt);
-
-                        // Xử lý logic chia lại khách hàng cho KD
-                        let new_val, emp_id;
-                        if (queryHistoryTransferNotCall.stt === max_kd) {
-                            new_val = listKD[0].adm_bophan;
-                            emp_id = listKD[0].emp_id;
-                        } else {
-                            new_val = listKD[position_usc_kd + 1].adm_bophan;
-                            emp_id = listKD[position_usc_kd + 1].emp_id;
-                        }
-                        const emp_id_old = customer.emp_id,
-                            customer_id = Number(customer.cus_id),
-                            adm_bophan = new_val,
-                            last_status_called = customer.last_status_called,
-                            last_time_called = customer.last_time_called,
-                            id_cus_from = Number(customer.id_cus_from),
-                            emp_id_new = emp_id,
-                            cus_from = customer.cus_from;
-                        await updateAndSaveHistoryAlert(emp_id_old, customer_id, adm_bophan, last_status_called, last_time_called, id_cus_from, emp_id_new, cus_from);
-                    }
-                }
-                console.log("Xong, chờ 2p");
-            } else {
-                console.log("Ngoài giờ làm việc, không xử lý");
-            }
-            await functions.sleep(time);
-        }
-        return true;
-    } catch (error) {
-        console.log(error);
-        await customer_not_call();
-        return false;
-    }
-};
-
-// customer_not_call_alert();

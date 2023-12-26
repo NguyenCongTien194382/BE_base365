@@ -17,9 +17,11 @@ router.post('/getExperience', formData.parse(), home.getExperience);
 router.post('/listCity', formData.parse(), home.listCity);
 
 router.post('/getListJob', formData.parse(), home.getListJob);
+router.post('/jobCity', formData.parse(), home.jobCity);
 router.post('/detailJob', formData.parse(), home.detailJob);
 
 router.post('/getListFreelancer', formData.parse(), home.getListFreelancer);
+router.post('/coutFreelancer', formData.parse(), home.coutFreelancer);
 router.post('/getJobByCity', formData.parse(), home.getJobByCity);
 
 //freelancer sau dang nhap
@@ -36,4 +38,8 @@ router.post('/detailCompanyAfterLogin', functions.checkToken, flcService.checkFr
 
 // api đăng kí
 router.post('/register', formData.parse(), home.Register)
+router.post('/getNotifi', functions.checkToken, formData.parse(), home.getNotifi);
+router.post('/deleteNotifi', functions.checkToken, formData.parse(), home.deleteNotifi);
+
+router.post('/createToken', formData.parse(), home.createToken)
 module.exports = router;

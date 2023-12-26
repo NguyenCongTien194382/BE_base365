@@ -63,9 +63,11 @@ AppRaonhanh.use("/api/tool", raonhanhtool);
 errorApp(AppRaonhanh);
 
 const DB_URL = 'mongodb://localhost:27017/api-base365';
-mongoose.connect(DB_URL)
+mongoose.connect(DB_URL, { serverSelectionTimeoutMS: 10000 })
     .then(() => console.log('App RaoNhanh365: DB Connected!'))
     .catch(error => console.log('App RaoNhanh365: DB connection error:', error.message));
-
+mongoose.connection.on('error', function() {
+    console.log("Lỗi try vấn")
+});
 // Raonhanh
 AppRaonhanh.listen(3004, () => {});

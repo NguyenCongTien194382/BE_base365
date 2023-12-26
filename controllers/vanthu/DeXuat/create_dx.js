@@ -1,6 +1,6 @@
 const De_Xuat = require('../../../models/Vanthu/de_xuat')
 const functions = require('../../../services/vanthu')
-// const multer = require('multer');
+    // const multer = require('multer');
 const path = require('path')
 const thongBao = require('../../../models/Vanthu365/tl_thong_bao')
 const ThongBao = require('../../../models/Vanthu365/tl_thong_bao')
@@ -21,9 +21,19 @@ const TaiSan = require('../../../models/QuanLyTaiSan/TaiSan')
 const Project = require('../../../models/giaoviec365/projects')
 const SettingPropose = require('../../../models/qlc/SettingPropose')
 const TaiSanDangSuDung = require('../../../models/QuanLyTaiSan/TaiSanDangSuDung');
+const ManageNghiPhep = require("../../../models/ManageNghiPhep");
+const His_Handle = require('../../../models/Vanthu/history_handling_dx');
+const TamUng = require('../../../../tinhluong/models/Tinhluong/TinhluongTamUng');
+const ThanhToan = require('../../../../tinhluong/models/Tinhluong/TinhluongThanhToan');
+const Pregnant = require('../../../../tinhluong/models/Tinhluong/TinhluongPregnant');
+const ThuongPhat = require('../../../../tinhluong/models/Tinhluong/Tinhluong365ThuongPhat');
+const TinhluongRose = require('../../../../tinhluong/models/Tinhluong/TinhluongRose');
+const TinhluongRdtHistory = require('../../../../tinhluong/models/Tinhluong/TinhluongRdtHistory');
+const ReceiveSalaryDay = require("../../../models/qlc/ReceiveSalaryDay");
+const OrganizeDetail = require('../../../models/qlc/OrganizeDetail');
 
 //đề xuất xin nghỉ ok
-exports.de_xuat_xin_nghi = async (req, res) => {
+exports.de_xuat_xin_nghi = async(req, res) => {
     try {
         let {
             name_dx,
@@ -111,33 +121,33 @@ exports.de_xuat_xin_nghi = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -219,7 +229,7 @@ exports.de_xuat_xin_nghi = async (req, res) => {
 }
 
 //đề xuất bổ nhiệm
-exports.de_xuat_xin_bo_nhiem = async (req, res) => {
+exports.de_xuat_xin_bo_nhiem = async(req, res) => {
     try {
         let {
             name_dx,
@@ -276,33 +286,33 @@ exports.de_xuat_xin_bo_nhiem = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -382,7 +392,7 @@ exports.de_xuat_xin_bo_nhiem = async (req, res) => {
 }
 
 //đề xuất cấp phát tài sản
-exports.de_xuat_xin_cap_phat_tai_san = async (req, res) => {
+exports.de_xuat_xin_cap_phat_tai_san = async(req, res) => {
     try {
         let {
             name_dx,
@@ -435,33 +445,33 @@ exports.de_xuat_xin_cap_phat_tai_san = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -535,7 +545,7 @@ exports.de_xuat_xin_cap_phat_tai_san = async (req, res) => {
 }
 
 //đề xuất đổi ca
-exports.de_xuat_doi_ca = async (req, res) => {
+exports.de_xuat_doi_ca = async(req, res) => {
     try {
         let {
             name_dx,
@@ -591,33 +601,33 @@ exports.de_xuat_doi_ca = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -646,7 +656,7 @@ exports.de_xuat_doi_ca = async (req, res) => {
             let saveDX = await new_de_xuat.save()
             let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${maxID + 1
                 }`
-            // SenderID :nguoi gui , ListReceive: nguoi duyet , CompanyId, Message: ten de_xuat,ListFollower: nguoi thoe doi,Status,Link,file_kem
+                // SenderID :nguoi gui , ListReceive: nguoi duyet , CompanyId, Message: ten de_xuat,ListFollower: nguoi thoe doi,Status,Link,file_kem
             const tb =
                 (await thongBao.findOne({}, {}, { sort: { _id: -1 } }).lean()) || 0
             let idTB = 0
@@ -696,7 +706,7 @@ exports.de_xuat_doi_ca = async (req, res) => {
 }
 
 //đề xuất luân chuyển công tác
-exports.de_xuat_luan_chuyen_cong_tac = async (req, res) => {
+exports.de_xuat_luan_chuyen_cong_tac = async(req, res) => {
     try {
         let {
             name_dx,
@@ -752,33 +762,33 @@ exports.de_xuat_luan_chuyen_cong_tac = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -857,7 +867,7 @@ exports.de_xuat_luan_chuyen_cong_tac = async (req, res) => {
 }
 
 //đề xuất tăng lương
-exports.de_xuat_tang_luong = async (req, res) => {
+exports.de_xuat_tang_luong = async(req, res) => {
     try {
         let {
             name_dx,
@@ -912,33 +922,33 @@ exports.de_xuat_tang_luong = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -1019,7 +1029,7 @@ exports.de_xuat_tang_luong = async (req, res) => {
 }
 
 //đè xuất tham gia dự ấn
-exports.de_xuat_tham_gia_du_an = async (req, res) => {
+exports.de_xuat_tham_gia_du_an = async(req, res) => {
     try {
         let {
             name_dx,
@@ -1074,33 +1084,33 @@ exports.de_xuat_tham_gia_du_an = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -1181,7 +1191,7 @@ exports.de_xuat_tham_gia_du_an = async (req, res) => {
 }
 
 //đề xuất xin tạm ứng lương
-exports.de_xuat_xin_tam_ung = async (req, res) => {
+exports.de_xuat_xin_tam_ung = async(req, res) => {
     try {
         let {
             name_dx,
@@ -1235,33 +1245,33 @@ exports.de_xuat_xin_tam_ung = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -1342,7 +1352,7 @@ exports.de_xuat_xin_tam_ung = async (req, res) => {
 }
 
 //đề xuất thôi việc
-exports.de_xuat_xin_thoi_Viec = async (req, res) => {
+exports.de_xuat_xin_thoi_Viec = async(req, res) => {
     try {
         let {
             name_dx,
@@ -1397,33 +1407,33 @@ exports.de_xuat_xin_thoi_Viec = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -1503,7 +1513,7 @@ exports.de_xuat_xin_thoi_Viec = async (req, res) => {
 }
 
 //đề xuất lịch làm việc
-exports.lich_lam_viec = async (req, res) => {
+exports.lich_lam_viec = async(req, res) => {
     try {
         let {
             name_dx,
@@ -1554,33 +1564,33 @@ exports.lich_lam_viec = async (req, res) => {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             const new_de_xuat = new De_Xuat({
                 _id: maxID + 1,
@@ -1661,7 +1671,7 @@ exports.lich_lam_viec = async (req, res) => {
 }
 
 //đề xuất cộng công
-exports.dxCong = async (req, res) => {
+exports.dxCong = async(req, res) => {
     try {
         let {
             name_dx,
@@ -1717,33 +1727,33 @@ exports.dxCong = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXC = new DeXuat({
                 _id: _id,
@@ -1822,7 +1832,7 @@ exports.dxCong = async (req, res) => {
 }
 
 //đề xuất sửa chữa cơ sở vật chất
-exports.dxCoSoVatChat = async (req, res) => {
+exports.dxCoSoVatChat = async(req, res) => {
     try {
         let {
             name_dx,
@@ -1879,33 +1889,33 @@ exports.dxCoSoVatChat = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXCSVC = new DeXuat({
                 _id: _id,
@@ -1984,7 +1994,7 @@ exports.dxCoSoVatChat = async (req, res) => {
 }
 
 //đề xuất đăng kí sử dụng xe
-exports.dxDangKiSuDungXe = async (req, res) => {
+exports.dxDangKiSuDungXe = async(req, res) => {
     try {
         let {
             name_dx,
@@ -2042,33 +2052,33 @@ exports.dxDangKiSuDungXe = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXXe = new DeXuat({
                 _id: _id,
@@ -2148,7 +2158,7 @@ exports.dxDangKiSuDungXe = async (req, res) => {
 }
 
 //đề xuất hoa hồng
-exports.dxHoaHong = async (req, res) => {
+exports.dxHoaHong = async(req, res) => {
     try {
         let {
             name_dx,
@@ -2165,7 +2175,6 @@ exports.dxHoaHong = async (req, res) => {
             name_dt,
             time_hh,
         } = req.body
-        console.log("req.body", req.body)
         let id_user = ''
         let com_id = ''
         let name_user = ''
@@ -2208,33 +2217,33 @@ exports.dxHoaHong = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXHH = new DeXuat({
                 _id: _id,
@@ -2314,7 +2323,7 @@ exports.dxHoaHong = async (req, res) => {
 }
 
 //đề xuất khiếu nại
-exports.dxKhieuNai = async (req, res) => {
+exports.dxKhieuNai = async(req, res) => {
     try {
         let {
             name_dx,
@@ -2369,33 +2378,33 @@ exports.dxKhieuNai = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXKN = new DeXuat({
                 _id: _id,
@@ -2471,7 +2480,7 @@ exports.dxKhieuNai = async (req, res) => {
 }
 
 //đề xuất xử dụng phòng họp
-exports.dxPhongHop = async (req, res) => {
+exports.dxPhongHop = async(req, res) => {
     try {
         let {
             name_dx,
@@ -2528,33 +2537,33 @@ exports.dxPhongHop = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXPH = new DeXuat({
                 _id: _id,
@@ -2633,7 +2642,7 @@ exports.dxPhongHop = async (req, res) => {
 }
 
 //đề xuất tăng ca
-exports.dxTangCa = async (req, res) => {
+exports.dxTangCa = async(req, res) => {
     try {
         let {
             name_dx,
@@ -2689,33 +2698,33 @@ exports.dxTangCa = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXTC = new DeXuat({
                 _id: _id,
@@ -2792,7 +2801,7 @@ exports.dxTangCa = async (req, res) => {
 }
 
 //đề xuất nghỉ thai sản
-exports.dxThaiSan = async (req, res) => {
+exports.dxThaiSan = async(req, res) => {
     try {
         let {
             name_dx,
@@ -2846,33 +2855,33 @@ exports.dxThaiSan = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXTS = new DeXuat({
                 _id: _id,
@@ -2950,7 +2959,7 @@ exports.dxThaiSan = async (req, res) => {
 }
 
 //đề xuất thanh toán
-exports.dxThanhToan = async (req, res) => {
+exports.dxThanhToan = async(req, res) => {
     try {
         let {
             name_dx,
@@ -3005,33 +3014,33 @@ exports.dxThanhToan = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXTT = new DeXuat({
                 _id: _id,
@@ -3108,7 +3117,7 @@ exports.dxThanhToan = async (req, res) => {
 }
 
 //đề xuất thưởng phạt
-exports.dxThuongPhat = async (req, res) => {
+exports.dxThuongPhat = async(req, res) => {
     try {
         let {
             name_dx,
@@ -3135,6 +3144,7 @@ exports.dxThuongPhat = async (req, res) => {
             return functions.setError(res, 'không có quyền truy cập', 400)
         }
         let file_kem = req.files.file_kem
+        let nguoi_tp;
         if (type_tp == 1) {
             nguoi_tp = id_nguoi_tp
         } else {
@@ -3171,33 +3181,33 @@ exports.dxThuongPhat = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXTP = new DeXuat({
                 _id: _id,
@@ -3277,7 +3287,7 @@ exports.dxThuongPhat = async (req, res) => {
 }
 
 //đề xuất đi muộn về sớm
-exports.dxDiMuonVeSom = async (req, res) => {
+exports.dxDiMuonVeSom = async(req, res) => {
     try {
         let {
             name_dx,
@@ -3331,33 +3341,33 @@ exports.dxDiMuonVeSom = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let createDXDMVS = new DeXuat({
                 _id: _id,
@@ -3438,7 +3448,7 @@ exports.dxDiMuonVeSom = async (req, res) => {
 }
 
 //đề xuất xin nghỉ phép ra ngoài
-exports.dxXinNghiRaNgoai = async (req, res) => {
+exports.dxXinNghiRaNgoai = async(req, res) => {
     try {
         let {
             name_dx,
@@ -3491,33 +3501,33 @@ exports.dxXinNghiRaNgoai = async (req, res) => {
                 _id = Number(maxID)
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
             let new_de_xuat = new DeXuat({
                 _id: _id,
@@ -3597,7 +3607,7 @@ exports.dxXinNghiRaNgoai = async (req, res) => {
 }
 
 //đề xuất nhập ngày nhận lương
-exports.dxNhapNgayNhanLuong = async (req, res) => {
+exports.dxNhapNgayNhanLuong = async(req, res) => {
     try {
         let {
             name_dx,
@@ -3644,38 +3654,38 @@ exports.dxNhapNgayNhanLuong = async (req, res) => {
             let maxID = 0
             const de_xuat =
                 (await De_Xuat.findOne({}, {}, { sort: { _id: -1 } }).lean()) || 0
-            //   console.log(de_xuat);
+                //   console.log(de_xuat);
             if (de_xuat) {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
 
             //console.log("mx : " + maxID);
@@ -3763,7 +3773,7 @@ exports.dxNhapNgayNhanLuong = async (req, res) => {
 }
 
 //đề xuất xin tải tài liệu
-exports.dxXinTaiTaiLieu = async (req, res) => {
+exports.dxXinTaiTaiLieu = async(req, res) => {
     try {
         let {
             name_dx,
@@ -3808,38 +3818,38 @@ exports.dxXinTaiTaiLieu = async (req, res) => {
             let maxID = 0
             const de_xuat =
                 (await De_Xuat.findOne({}, {}, { sort: { _id: -1 } }).lean()) || 0
-            //   console.log(de_xuat);
+                //   console.log(de_xuat);
             if (de_xuat) {
                 maxID = de_xuat._id
             }
             const user = await User.aggregate([{
-                $match: {
-                    idQLC: id_user,
-                    'inForPerson.employee.com_id': com_id,
-                    type: 2,
+                    $match: {
+                        idQLC: id_user,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2,
+                    },
                 },
-            },
-            {
-                $lookup: {
-                    from: 'QLC_OrganizeDetail',
-                    localField: 'inForPerson.employee.organizeDetailId',
-                    foreignField: 'id',
-                    pipeline: [{
-                        $match: {
-                            comId: com_id,
-                        },
-                    },],
-                    as: 'organizeDetail',
+                {
+                    $lookup: {
+                        from: 'QLC_OrganizeDetail',
+                        localField: 'inForPerson.employee.organizeDetailId',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'organizeDetail',
+                    },
                 },
-            },
-            {
-                $unwind: '$organizeDetail',
-            },
-            {
-                $project: {
-                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                {
+                    $unwind: '$organizeDetail',
                 },
-            },
+                {
+                    $project: {
+                        organizeDetailName: '$organizeDetail.organizeDetailName',
+                    },
+                },
             ])
 
             //console.log("mx : " + maxID);
@@ -3925,174 +3935,18 @@ exports.dxXinTaiTaiLieu = async (req, res) => {
 }
 
 //fetch ra người duyệt và người theo dõi
-exports.showadd = async (req, res) => {
+exports.showadd = async(req, res) => {
     try {
         if (req.user.data.type !== 2) {
             return functions.setError(res, 'không có quyền truy cập', 400)
         }
         let com_id = req.user.data.com_id
         const user = await User.aggregate([{
-            $match: {
-                idQLC: req.user.data.idQLC,
-                'inForPerson.employee.com_id': com_id,
-                type: 2,
-            },
-        },
-        {
-            $lookup: {
-                from: 'QLC_Positions',
-                localField: 'inForPerson.employee.position_id',
-                foreignField: 'id',
-                pipeline: [{
-                    $match: {
-                        comId: com_id,
-                    },
-                },],
-                as: 'position',
-            },
-        },
-        {
-            $unwind: '$position',
-        },
-        {
-            $project: {
-                idQLC: '$idQLC',
-                userName: '$userName',
-                position: '$position',
-                com_id: '$inForPerson.employee.com_id',
-                listOrganizeDetailId: '$inForPerson.employee.listOrganizeDetailId',
-            },
-        },
-        ])
-        let users
-        if (user && user.length > 0) {
-            if (user[0].listOrganizeDetailId) {
-                users = await User.aggregate([{
-                    $match: {
-                        'inForPerson.employee.com_id': com_id,
-                        'inForPerson.employee.ep_status': 'Active',
-                        type: 2,
-                    },
-                },
-                {
-                    $sort: { userName: -1 },
-                },
-                {
-                    $lookup: {
-                        from: 'QLC_Positions',
-                        localField: 'inForPerson.employee.position_id',
-                        foreignField: 'id',
-                        pipeline: [{
-                            $match: {
-                                comId: com_id,
-                            },
-                        },],
-                        as: 'position',
-                    },
-                },
-                {
-                    $unwind: '$position',
-                },
-                {
-                    $match: {
-                        $or: [{
-                            'position.isManager': 1,
-                            'position.level': {
-                                $lt: user[0].position.level,
-                            },
-                        },
-                        {
-                            'inForPerson.employee.listOrganizeDetailId': {
-                                $exists: true,
-                            },
-                            'inForPerson.employee.listOrganizeDetailId': { $ne: [] },
-                            'inForPerson.employee.listOrganizeDetailId': {
-                                $not: {
-                                    $elemMatch: {
-                                        $nin: user[0].listOrganizeDetailId.map((item) => ({
-                                            level: item.level,
-                                            organizeDetailId: item.organizeDetailId,
-                                        })),
-                                    },
-                                },
-                            },
-                            'position.level': {
-                                $lt: user[0].position.level,
-                            },
-                        },
-                        ],
-                    },
-                },
-                {
-                    $project: {
-                        idQLC: '$idQLC',
-                        userName: '$userName',
-                        avatarUser: '$avatarUser',
-                    },
-                },
-                ])
-            } else {
-                users = await User.aggregate([{
-                    $match: {
-                        'inForPerson.employee.com_id': com_id,
-                        'inForPerson.employee.ep_status': 'Active',
-                        type: 2,
-                    },
-                },
-                {
-                    $sort: { userName: -1 },
-                },
-                {
-                    $lookup: {
-                        from: 'QLC_Positions',
-                        localField: 'inForPerson.employee.position_id',
-                        foreignField: 'id',
-                        pipeline: [{
-                            $match: {
-                                comId: com_id,
-                            },
-                        },],
-                        as: 'position',
-                    },
-                },
-                {
-                    $unwind: '$position',
-                },
-                {
-                    $match: {
-                        $or: [{
-                            'position.isManager': 1,
-                            'position.level': {
-                                $lt: user[0].position.level,
-                            },
-                        },
-                        {
-                            'position.level': {
-                                $lt: user[0].position.level,
-                            },
-                        },
-                        ],
-                    },
-                },
-                {
-                    $project: {
-                        idQLC: '$idQLC',
-                        userName: '$userName',
-                        avatarUser: '$avatarUser',
-                    },
-                },
-                ])
-            }
-        } else {
-            users = await User.aggregate([{
                 $match: {
+                    idQLC: req.user.data.idQLC,
                     'inForPerson.employee.com_id': com_id,
-                    'inForPerson.employee.ep_status': 'Active',
                     type: 2,
                 },
-            },
-            {
-                $sort: { userName: -1 },
             },
             {
                 $lookup: {
@@ -4103,7 +3957,7 @@ exports.showadd = async (req, res) => {
                         $match: {
                             comId: com_id,
                         },
-                    },],
+                    }, ],
                     as: 'position',
                 },
             },
@@ -4111,17 +3965,173 @@ exports.showadd = async (req, res) => {
                 $unwind: '$position',
             },
             {
-                $match: {
-                    'position.isManager': 1,
-                },
-            },
-            {
                 $project: {
                     idQLC: '$idQLC',
                     userName: '$userName',
-                    avatarUser: '$avatarUser',
+                    position: '$position',
+                    com_id: '$inForPerson.employee.com_id',
+                    listOrganizeDetailId: '$inForPerson.employee.listOrganizeDetailId',
                 },
             },
+        ])
+        let users
+        if (user && user.length > 0) {
+            if (user[0].listOrganizeDetailId) {
+                users = await User.aggregate([{
+                        $match: {
+                            'inForPerson.employee.com_id': com_id,
+                            'inForPerson.employee.ep_status': 'Active',
+                            type: 2,
+                        },
+                    },
+                    {
+                        $sort: { userName: -1 },
+                    },
+                    {
+                        $lookup: {
+                            from: 'QLC_Positions',
+                            localField: 'inForPerson.employee.position_id',
+                            foreignField: 'id',
+                            pipeline: [{
+                                $match: {
+                                    comId: com_id,
+                                },
+                            }, ],
+                            as: 'position',
+                        },
+                    },
+                    {
+                        $unwind: '$position',
+                    },
+                    {
+                        $match: {
+                            $or: [{
+                                    'position.isManager': 1,
+                                    'position.level': {
+                                        $lt: user[0].position.level,
+                                    },
+                                },
+                                {
+                                    'inForPerson.employee.listOrganizeDetailId': {
+                                        $exists: true,
+                                    },
+                                    'inForPerson.employee.listOrganizeDetailId': { $ne: [] },
+                                    'inForPerson.employee.listOrganizeDetailId': {
+                                        $not: {
+                                            $elemMatch: {
+                                                $nin: user[0].listOrganizeDetailId.map((item) => ({
+                                                    level: item.level,
+                                                    organizeDetailId: item.organizeDetailId,
+                                                })),
+                                            },
+                                        },
+                                    },
+                                    'position.level': {
+                                        $lt: user[0].position.level,
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        $project: {
+                            idQLC: '$idQLC',
+                            userName: '$userName',
+                            avatarUser: '$avatarUser',
+                        },
+                    },
+                ])
+            } else {
+                users = await User.aggregate([{
+                        $match: {
+                            'inForPerson.employee.com_id': com_id,
+                            'inForPerson.employee.ep_status': 'Active',
+                            type: 2,
+                        },
+                    },
+                    {
+                        $sort: { userName: -1 },
+                    },
+                    {
+                        $lookup: {
+                            from: 'QLC_Positions',
+                            localField: 'inForPerson.employee.position_id',
+                            foreignField: 'id',
+                            pipeline: [{
+                                $match: {
+                                    comId: com_id,
+                                },
+                            }, ],
+                            as: 'position',
+                        },
+                    },
+                    {
+                        $unwind: '$position',
+                    },
+                    {
+                        $match: {
+                            $or: [{
+                                    'position.isManager': 1,
+                                    'position.level': {
+                                        $lt: user[0].position.level,
+                                    },
+                                },
+                                {
+                                    'position.level': {
+                                        $lt: user[0].position.level,
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        $project: {
+                            idQLC: '$idQLC',
+                            userName: '$userName',
+                            avatarUser: '$avatarUser',
+                        },
+                    },
+                ])
+            }
+        } else {
+            users = await User.aggregate([{
+                    $match: {
+                        'inForPerson.employee.com_id': com_id,
+                        'inForPerson.employee.ep_status': 'Active',
+                        type: 2,
+                    },
+                },
+                {
+                    $sort: { userName: -1 },
+                },
+                {
+                    $lookup: {
+                        from: 'QLC_Positions',
+                        localField: 'inForPerson.employee.position_id',
+                        foreignField: 'id',
+                        pipeline: [{
+                            $match: {
+                                comId: com_id,
+                            },
+                        }, ],
+                        as: 'position',
+                    },
+                },
+                {
+                    $unwind: '$position',
+                },
+                {
+                    $match: {
+                        'position.isManager': 1,
+                    },
+                },
+                {
+                    $project: {
+                        idQLC: '$idQLC',
+                        userName: '$userName',
+                        avatarUser: '$avatarUser',
+                    },
+                },
             ])
         }
         const data = []
@@ -4135,55 +4145,55 @@ exports.showadd = async (req, res) => {
                 UserlistOrganizeDetailId.pop()
             }
             await Promise.all(
-                data.map(async (value, index) => {
+                data.map(async(value, index) => {
                     const manager = await Users.aggregate([{
-                        $match: {
-                            'inForPerson.employee.com_id': com_id,
-                            'inForPerson.employee.listOrganizeDetailId': {
-                                $all: value,
-                            },
-                            'inForPerson.employee.ep_status': 'Active',
-                        },
-                    },
-                    {
-                        $lookup: {
-                            from: 'QLC_Positions',
-                            localField: 'inForPerson.employee.position_id',
-                            foreignField: 'id',
-                            pipeline: [{
-                                $match: {
-                                    comId: com_id,
+                            $match: {
+                                'inForPerson.employee.com_id': com_id,
+                                'inForPerson.employee.listOrganizeDetailId': {
+                                    $all: value,
                                 },
-                            },],
-                            as: 'positions',
-                        },
-                    },
-                    {
-                        $match: {
-                            'position.level': {
-                                $lt: user[0].position.level,
+                                'inForPerson.employee.ep_status': 'Active',
                             },
                         },
-                    },
-                    {
-                        $unwind: '$positions',
-                    },
-                    {
-                        $sort: {
-                            'positions.level': 1,
+                        {
+                            $lookup: {
+                                from: 'QLC_Positions',
+                                localField: 'inForPerson.employee.position_id',
+                                foreignField: 'id',
+                                pipeline: [{
+                                    $match: {
+                                        comId: com_id,
+                                    },
+                                }, ],
+                                as: 'positions',
+                            },
                         },
-                    },
-                    {
-                        $limit: 2,
-                    },
-                    {
-                        $project: {
-                            idQLC: '$idQLC',
-                            userName: '$userName',
-                            avatarUser: '$avatarUser',
-                            position_id: '$inForPerson.employee.position_id',
+                        {
+                            $match: {
+                                'position.level': {
+                                    $lt: user[0].position.level,
+                                },
+                            },
                         },
-                    },
+                        {
+                            $unwind: '$positions',
+                        },
+                        {
+                            $sort: {
+                                'positions.level': 1,
+                            },
+                        },
+                        {
+                            $limit: 2,
+                        },
+                        {
+                            $project: {
+                                idQLC: '$idQLC',
+                                userName: '$userName',
+                                avatarUser: '$avatarUser',
+                                position_id: '$inForPerson.employee.position_id',
+                            },
+                        },
                     ])
                     if (manager && Number(manager.length) === 2) {
                         if (
@@ -4214,9 +4224,9 @@ exports.showadd = async (req, res) => {
         })
         let listUsersDuyet = users
         let listUsersTheoDoi = await User.find({
-            'inForPerson.employee.com_id': com_id,
-            'inForPerson.employee.ep_status': 'Active',
-        })
+                'inForPerson.employee.com_id': com_id,
+                'inForPerson.employee.ep_status': 'Active',
+            })
             .select('idQLC userName avatarUser')
             .lean()
 
@@ -4251,7 +4261,7 @@ exports.showadd = async (req, res) => {
 }
 
 //fetch ra danh sách mức doanh thu
-exports.showMucDoanhThu = async (req, res) => {
+exports.showMucDoanhThu = async(req, res) => {
     try {
         let com_id = req.user.data.com_id
         const danhthuList = await TinhluongThietLap.find({
@@ -4263,7 +4273,7 @@ exports.showMucDoanhThu = async (req, res) => {
         return functions.setError(res, error.message)
     }
 }
-exports.handleOldRosePropose = async (req, res) => {
+exports.handleOldRosePropose = async(req, res) => {
     try {
         const com_id = 3312
         const dxhh = await DeXuat.find({ com_id: com_id, type_dx: 20 })
@@ -4273,47 +4283,47 @@ exports.handleOldRosePropose = async (req, res) => {
     }
 }
 
-exports.emp_shift_in_day = async (req, res) => {
+exports.emp_shift_in_day = async(req, res) => {
     try {
         const com_id = req.user.data.com_id
         const id_user = Number(req.body.ep_id) || req.user.data.idQLC
         let { day } = req.body
         const trueDay = new Date(day)
         const emp_cycle = await EmployeCycle.aggregate([{
-            $match: {
-                ep_id: id_user,
+                $match: {
+                    ep_id: id_user,
+                },
             },
-        },
-        {
-            $lookup: {
-                from: 'CC365_Cycle',
-                localField: 'cy_id',
-                foreignField: 'cy_id',
-                pipeline: [{
-                    $match: {
-                        com_id: com_id,
-                        apply_month: {
-                            $gt: new Date(trueDay.getFullYear(), trueDay.getMonth(), 0),
-                            $lt: new Date(
-                                trueDay.getFullYear(),
-                                trueDay.getMonth() + 1,
-                                0
-                            ),
+            {
+                $lookup: {
+                    from: 'CC365_Cycle',
+                    localField: 'cy_id',
+                    foreignField: 'cy_id',
+                    pipeline: [{
+                        $match: {
+                            com_id: com_id,
+                            apply_month: {
+                                $gt: new Date(trueDay.getFullYear(), trueDay.getMonth(), 0),
+                                $lt: new Date(
+                                    trueDay.getFullYear(),
+                                    trueDay.getMonth() + 1,
+                                    0
+                                ),
+                            },
                         },
-                    },
-                },],
-                as: 'Cycle',
+                    }, ],
+                    as: 'Cycle',
+                },
             },
-        },
-        {
-            $unwind: '$Cycle',
-        },
-        {
-            $project: {
-                cycle: '$Cycle.cy_detail',
-                update_time: '$update_time',
+            {
+                $unwind: '$Cycle',
             },
-        },
+            {
+                $project: {
+                    cycle: '$Cycle.cy_detail',
+                    update_time: '$update_time',
+                },
+            },
         ])
         let dayCycleDetail = []
         for (let i = 0; i < emp_cycle.length; i++) {
@@ -4344,16 +4354,16 @@ exports.emp_shift_in_day = async (req, res) => {
                 .map(Number)
             if (shiftIds.length > 0) {
                 list = await Shifts.aggregate([{
-                    $match: {
-                        com_id: Number(com_id),
-                        shift_id: {
-                            $in: shiftIds,
+                        $match: {
+                            com_id: Number(com_id),
+                            shift_id: {
+                                $in: shiftIds,
+                            },
                         },
                     },
-                },
-                {
-                    $sort: { _id: -1 },
-                },
+                    {
+                        $sort: { _id: -1 },
+                    },
                 ])
             }
         }
@@ -4365,7 +4375,7 @@ exports.emp_shift_in_day = async (req, res) => {
 }
 
 
-exports.meetingRooms = async (req, res) => {
+exports.meetingRooms = async(req, res) => {
     try {
         let { time_start, time_end } = req.body
         const com_id = req.user.data.com_id
@@ -4395,7 +4405,7 @@ exports.meetingRooms = async (req, res) => {
                     if (
                         meetings.every(
                             (m) =>
-                                time_end <= m.startDateNumber || time_start >= m.endDateNumber
+                            time_end <= m.startDateNumber || time_start >= m.endDateNumber
                         )
                     ) {
                         meetingRoomWitStatus.push({
@@ -4405,12 +4415,12 @@ exports.meetingRooms = async (req, res) => {
                     } else if (
                         meetings.some(
                             (m) =>
-                                (time_start <= m.startDateNumber &&
-                                    time_end >= m.startDateNumber &&
-                                    time_end <= m.endDateNumber) ||
-                                (time_start <= m.endDateNumber &&
-                                    time_start >= m.startDateNumber &&
-                                    time_end >= m.endDateNumber)
+                            (time_start <= m.startDateNumber &&
+                                time_end >= m.startDateNumber &&
+                                time_end <= m.endDateNumber) ||
+                            (time_start <= m.endDateNumber &&
+                                time_start >= m.startDateNumber &&
+                                time_end >= m.endDateNumber)
                         )
                     ) {
                         meetingRoomWitStatus.push({
@@ -4420,9 +4430,9 @@ exports.meetingRooms = async (req, res) => {
                     } else if (
                         meetings.some(
                             (m) =>
-                                (time_start <= m.startDateNumber &&
-                                    time_end >= m.endDateNumber) ||
-                                (time_start >= m.startDateNumber && time_end <= m.endDateNumber)
+                            (time_start <= m.startDateNumber &&
+                                time_end >= m.endDateNumber) ||
+                            (time_start >= m.startDateNumber && time_end <= m.endDateNumber)
                         )
                     ) {
                         meetingRoomWitStatus.push({
@@ -4444,7 +4454,7 @@ exports.meetingRooms = async (req, res) => {
         return res.status(500).json({ error })
     }
 }
-exports.InitNewPostions = async (req, res) => {
+exports.InitNewPostions = async(req, res) => {
     const { com_id } = req.body
     const pos = [
         { level: 21, value: '1', label: 'SINH VIÊN THỰC TẬP' },
@@ -4489,7 +4499,7 @@ exports.InitNewPostions = async (req, res) => {
     const update = await Positions.insertMany(pos_in_com)
     return res.status(200).json({ update })
 }
-exports.positions = async (req, res) => {
+exports.positions = async(req, res) => {
     try {
         const com_id = req.user.data.com_id
         const positions = await Positions.find({ comId: com_id })
@@ -4499,7 +4509,7 @@ exports.positions = async (req, res) => {
         return res.status(500).json({ error })
     }
 }
-exports.settingConfirm = async (req, res) => {
+exports.settingConfirm = async(req, res) => {
     try {
         const idQLC = req.user.data.idQLC
         const com_id = req.user.data.com_id
@@ -4513,7 +4523,7 @@ exports.settingConfirm = async (req, res) => {
         return res.status(500).json({ error })
     }
 }
-exports.getUserWithOrganize = async (req, res) => {
+exports.getUserWithOrganize = async(req, res) => {
     try {
         let { ep_id } = req.body
         const com_id = req.user.data.com_id
@@ -4524,65 +4534,65 @@ exports.getUserWithOrganize = async (req, res) => {
             conditions['idQLC'] = Number(ep_id)
         }
         const user = await Users.aggregate([{
-            $match: conditions,
-        },
-        {
-            $sort: { userName: -1 },
-        },
-        {
-            $lookup: {
-                from: 'QLC_OrganizeDetail',
-                localField: 'inForPerson.employee.organizeDetailId',
-                foreignField: 'id',
-                pipeline: [{
-                    $match: {
-                        comId: com_id,
-                    },
-                },],
-                as: 'organizeDetail',
+                $match: conditions,
             },
-        },
-        {
-            $lookup: {
-                from: 'QLC_Positions',
-                localField: 'inForPerson.employee.position_id',
-                foreignField: 'id',
-                pipeline: [{
-                    $match: {
-                        comId: com_id,
-                    },
-                },],
-                as: 'position',
+            {
+                $sort: { userName: -1 },
             },
-        },
-        {
-            $unwind: {
-                path: '$organizeDetail',
-                preserveNullAndEmptyArrays: true,
+            {
+                $lookup: {
+                    from: 'QLC_OrganizeDetail',
+                    localField: 'inForPerson.employee.organizeDetailId',
+                    foreignField: 'id',
+                    pipeline: [{
+                        $match: {
+                            comId: com_id,
+                        },
+                    }, ],
+                    as: 'organizeDetail',
+                },
             },
-        },
-        {
-            $unwind: {
-                path: '$position',
-                preserveNullAndEmptyArrays: true,
+            {
+                $lookup: {
+                    from: 'QLC_Positions',
+                    localField: 'inForPerson.employee.position_id',
+                    foreignField: 'id',
+                    pipeline: [{
+                        $match: {
+                            comId: com_id,
+                        },
+                    }, ],
+                    as: 'position',
+                },
             },
-        },
-        {
-            $project: {
-                ep_id: '$idQLC',
-                ep_email: '$email',
-                ep_phone: '$phone',
-                ep_name: '$userName',
-                ep_image: '$avatarUser',
-                role_id: '$role',
-                position_id: '$inForPerson.employee.position_id',
-                positionName: '$position.positionName',
-                com_id: '$inForPerson.employee.com_id',
-                listOrganizeDetailId: '$inForPerson.employee.listOrganizeDetailId',
-                organizeDetailId: '$inForPerson.employee.organizeDetailId',
-                organizeDetailName: '$organizeDetail.organizeDetailName',
+            {
+                $unwind: {
+                    path: '$organizeDetail',
+                    preserveNullAndEmptyArrays: true,
+                },
             },
-        },
+            {
+                $unwind: {
+                    path: '$position',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $project: {
+                    ep_id: '$idQLC',
+                    ep_email: '$email',
+                    ep_phone: '$phone',
+                    ep_name: '$userName',
+                    ep_image: '$avatarUser',
+                    role_id: '$role',
+                    position_id: '$inForPerson.employee.position_id',
+                    positionName: '$position.positionName',
+                    com_id: '$inForPerson.employee.com_id',
+                    listOrganizeDetailId: '$inForPerson.employee.listOrganizeDetailId',
+                    organizeDetailId: '$inForPerson.employee.organizeDetailId',
+                    organizeDetailName: '$organizeDetail.organizeDetailName',
+                },
+            },
         ])
         return functions.success(res, 'Get user by organize success!', {
             user: user,
@@ -4591,7 +4601,7 @@ exports.getUserWithOrganize = async (req, res) => {
         return functions.setError(res, err.message)
     }
 }
-exports.topMangersInOrganize = async (req, res) => {
+exports.topMangersInOrganize = async(req, res) => {
     try {
         const comId = req.body.comId
         const listOrganizeDetailId = JSON.parse(req.body.listOrganizeDetailId)
@@ -4603,48 +4613,48 @@ exports.topMangersInOrganize = async (req, res) => {
             listOrganizeDetailId.pop()
         }
         await Promise.all(
-            data.map(async (value, index) => {
+            data.map(async(value, index) => {
                 const manager = await Users.aggregate([{
-                    $match: {
-                        'inForPerson.employee.com_id': Number(comId),
-                        'inForPerson.employee.listOrganizeDetailId': {
-                            $all: value,
-                        },
-                        'inForPerson.employee.ep_status': 'Active',
-                    },
-                },
-                {
-                    $lookup: {
-                        from: 'QLC_Positions',
-                        localField: 'inForPerson.employee.position_id',
-                        foreignField: 'id',
-                        pipeline: [{
-                            $match: {
-                                comId: Number(comId),
+                        $match: {
+                            'inForPerson.employee.com_id': Number(comId),
+                            'inForPerson.employee.listOrganizeDetailId': {
+                                $all: value,
                             },
-                        },],
-                        as: 'positions',
+                            'inForPerson.employee.ep_status': 'Active',
+                        },
                     },
-                },
-                {
-                    $unwind: '$positions',
-                },
-                {
-                    $sort: {
-                        'positions.level': 1,
+                    {
+                        $lookup: {
+                            from: 'QLC_Positions',
+                            localField: 'inForPerson.employee.position_id',
+                            foreignField: 'id',
+                            pipeline: [{
+                                $match: {
+                                    comId: Number(comId),
+                                },
+                            }, ],
+                            as: 'positions',
+                        },
                     },
-                },
-                {
-                    $limit: 2,
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        userName: 1,
-                        idQLC: 1,
-                        position_id: '$inForPerson.employee.position_id',
+                    {
+                        $unwind: '$positions',
                     },
-                },
+                    {
+                        $sort: {
+                            'positions.level': 1,
+                        },
+                    },
+                    {
+                        $limit: 2,
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            userName: 1,
+                            idQLC: 1,
+                            position_id: '$inForPerson.employee.position_id',
+                        },
+                    },
                 ])
                 if (manager && Number(manager.length) === 2) {
                     if (
@@ -4669,25 +4679,25 @@ exports.topMangersInOrganize = async (req, res) => {
         return functions.setError(res, error.message)
     }
 }
-exports.listTaiSan = async (req, res) => {
+exports.listTaiSan = async(req, res) => {
     try {
         const com_id = req.user.data.com_id
         const taisan = await TaiSan.aggregate([{
-            $match: {
-                id_cty: com_id,
-                ts_da_xoa: 0,
+                $match: {
+                    id_cty: com_id,
+                    ts_da_xoa: 0,
+                },
             },
-        },
-        {
-            $sort: { ts_id: -1 },
-        },
-        {
-            $project: {
-                ts_id: '$ts_id',
-                ts_ten: '$ts_ten',
-                so_luong_con_lai: '$ts_so_luong',
+            {
+                $sort: { ts_id: -1 },
             },
-        },
+            {
+                $project: {
+                    ts_id: '$ts_id',
+                    ts_ten: '$ts_ten',
+                    so_luong_con_lai: '$ts_so_luong',
+                },
+            },
         ])
         return res.status(200).json({ data: taisan })
     } catch (error) {
@@ -4695,7 +4705,7 @@ exports.listTaiSan = async (req, res) => {
         return functions.setError(res, error)
     }
 }
-exports.listProjects = async (req, res) => {
+exports.listProjects = async(req, res) => {
     try {
         const com_id = req.user.data.com_id
         const idQLC = req.user.data.idQLC
@@ -4742,7 +4752,7 @@ exports.listProjects = async (req, res) => {
     }
 }
 
-exports.settingPropose = async (req, res) => {
+exports.settingPropose = async(req, res) => {
     try {
         const com_id = req.user.data.com_id
         const dexuat_id = Number(req.body.dexuat_id)
@@ -4756,7 +4766,7 @@ exports.settingPropose = async (req, res) => {
         return res.status(500).json({ error })
     }
 }
-exports.listTSdaCPchoNV = async (req, res) => {
+exports.listTSdaCPchoNV = async(req, res) => {
     try {
         const com_id = req.user.data.com_id;
         const idQLC = req.user.data.idQLC;
@@ -4767,46 +4777,1416 @@ exports.listTSdaCPchoNV = async (req, res) => {
             type: 2,
         })
         const data = await TaiSanDangSuDung.aggregate([{
-            $match: {
-                com_id_sd: com_id,
-                id_nv_sd: user._id,
-                sl_dang_sd: { $gt: 0 },
-            }
-        },
-        {
-            $lookup: {
-                from: "QLTS_Tai_San",
-                localField: "id_ts_sd",
-                foreignField: "ts_id",
-                as: "infoTS"
+                $match: {
+                    com_id_sd: com_id,
+                    id_nv_sd: user._id,
+                    sl_dang_sd: { $gt: 0 },
+                }
             },
-        },
-        {
-            $unwind: '$infoTS'
-        },
-        {
-            $sort: { id_sd: -1 }
-        },
-        {
-            $project: {
-                "capital_name": "$infoTS.ts_ten",
-                "sl_tai_san_con_lai": "$infoTS.ts_so_luong",
-                "id_vi_tri_tai_san": "$infoTS.ts_vi_tri",
-                "Ma_tai_san": "$infoTS.ts_id",
-                "idbb": "$id_sd",
-                com_id_sd: 1,
-                id_nv_sd: 1,
-                id_pb_sd: 1,
-                com_id_sd: 1,
-                sl_dang_sd: 1,
-                day_bd_sd: 1,
-                tinhtrang_ts: 1,
+            {
+                $lookup: {
+                    from: "QLTS_Tai_San",
+                    localField: "id_ts_sd",
+                    foreignField: "ts_id",
+                    as: "infoTS"
+                },
+            },
+            {
+                $unwind: '$infoTS'
+            },
+            {
+                $sort: { id_sd: -1 }
+            },
+            {
+                $project: {
+                    "capital_name": "$infoTS.ts_ten",
+                    "sl_tai_san_con_lai": "$infoTS.ts_so_luong",
+                    "id_vi_tri_tai_san": "$infoTS.ts_vi_tri",
+                    "Ma_tai_san": "$infoTS.ts_id",
+                    "idbb": "$id_sd",
+                    com_id_sd: 1,
+                    id_nv_sd: 1,
+                    id_pb_sd: 1,
+                    com_id_sd: 1,
+                    sl_dang_sd: 1,
+                    day_bd_sd: 1,
+                    tinhtrang_ts: 1,
+                }
             }
-        }
         ])
         return res.status(200).json({ data })
     } catch (error) {
         console.log("error", error)
+        return functions.setError(res, error)
+    }
+}
+
+exports.edit_nghi_phep = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            kieu_duyet, // 0-kiểm duyệt lần lượt hay đồng thời
+            id_user_duyet,
+            id_user_theo_doi,
+            id_user_bangiao_CRM,
+            type_time,
+            noi_dung,
+            loai_np,
+            ly_do,
+        } = req.body
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+            let listLyDo = JSON.parse(noi_dung).nghi_phep
+            let data = [] // Mảng chứa thông tin của từng ngày nghỉ
+            for (let i = 0; i < listLyDo.length; i++) {
+                let bd_nghi = listLyDo[i][0]
+                let kt_nghi = listLyDo[i][1]
+                let ca_nghi = listLyDo[i][2]
+                if (bd_nghi && kt_nghi) {
+                    let dates = functions.getDatesFromRange(bd_nghi, kt_nghi)
+                    dates.forEach((date) => {
+                        let formattedDate = functions.formatDate(date)
+                        data.push({
+                            ca_nghi,
+                            bd_nghi: formattedDate,
+                            kt_nghi: formattedDate,
+                        })
+                    })
+                } else if (bd_nghi) {
+                    let formattedDate = functions.formatDate(bd_nghi)
+                    data.push({ ca_nghi, bd_nghi: formattedDate, kt_nghi: formattedDate })
+                }
+            }
+            data = data.filter((item, index, array) => {
+                return array.findIndex((el) => JSON.stringify(el) === JSON.stringify(item)) === index;
+            })
+            let filterData = data
+            for (let i = 0; i < data.length; i++) {
+                if (data[i].ca_nghi == '') {
+                    filterData = filterData.filter(f => f.bd_nghi != data[i].bd_nghi)
+                    filterData.push(data[i])
+                }
+            }
+            data = filterData.sort((a, b) => new Date(a.bd_nghi) - new Date(b.bd_nghi));
+
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.nghi_phep.nd': data,
+                    'noi_dung.nghi_phep.ng_ban_giao_CRM': id_user_bangiao_CRM,
+                    'noi_dung.nghi_phep.loai_np': loai_np,
+                    'noi_dung.nghi_phep.ly_do': ly_do,
+                    type_time: type_time,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+            await ManageNghiPhep.deleteMany({
+                fromDx: id_dx,
+            })
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+            const id_user_nhan_arr = id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Xin nghỉ phép',
+                link,
+                edit_dx.file_kem
+            )
+            return functions.success(res, 'get data success', {
+                edit_dx
+            })
+        }
+    } catch (e) {
+        console.log(e)
+        return functions.setError(res, e.message)
+    }
+}
+exports.edit_tam_ung = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            kieu_duyet, // 0-kiểm duyệt lần lượt hay đồng thời
+            id_user_duyet,
+            id_user_theo_doi,
+            ly_do,
+            type_time,
+            tien_tam_ung,
+            ngay_tam_ung,
+        } = req.body
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.tam_ung.ngay_tam_ung': ngay_tam_ung,
+                    'noi_dung.tam_ung.sotien_tam_ung': tien_tam_ung,
+                    'noi_dung.tam_ung.ly_do': ly_do,
+                    type_time: type_time,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    tam_ung_status: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+            await TamUng.deleteMany({
+                fromDx: id_dx,
+            })
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+            const id_user_nhan_arr = id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Đề xuất tạm ứng',
+                link,
+                edit_dx.file_kem
+            )
+
+            return functions.success(res, 'get data success', {
+                edit_dx,
+            })
+        }
+    } catch (error) {
+        console.error('Failed ', error)
+        return functions.setError(res, error)
+    }
+}
+exports.edit_thanh_toan = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            noi_dung,
+            kieu_duyet,
+            id_user_duyet,
+            id_user_theo_doi,
+            type_duyet,
+            type_time,
+            so_tien_tt,
+            ly_do,
+        } = req.body
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+        let createDate = Math.floor(Date.now() / 1000)
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.thanh_toan.so_tien_tt': so_tien_tt,
+                    'noi_dung.thanh_toan.ly_do': ly_do,
+                    type_time: type_time,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    thanh_toan_status: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+
+            const id_user_nhan_arr = id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Đề xuất thanh toán',
+                link,
+                edit_dx.file_kem
+            )
+
+            await ThanhToan.deleteMany({
+                fromDx: id_dx,
+            })
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+
+            return functions.success(res, 'get data success', {
+                edit_dx,
+            })
+        }
+    } catch (error) {
+        console.error('Failed ', error)
+        return functions.setError(res, error)
+    }
+}
+exports.edit_khieu_nai = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            noi_dung,
+            kieu_duyet,
+            id_user_duyet,
+            id_user_theo_doi,
+            type_duyet,
+            type_time,
+            ly_do,
+        } = req.body
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+        let createDate = Math.floor(Date.now() / 1000)
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.khieu_nai.ly_do': ly_do,
+                    type_time: type_time,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+
+            const id_user_nhan_arr = id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Đề xuất khiếu nại',
+                link,
+                edit_dx.file_kem
+            )
+
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+
+            return functions.success(res, 'get data success', {
+                edit_dx,
+            })
+        }
+    } catch (error) {
+        console.error('Failed ', error)
+        return functions.setError(res, error)
+    }
+}
+exports.edit_cong_cong = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            noi_dung,
+            kieu_duyet,
+            id_user_duyet,
+            id_user_theo_doi,
+            ca_xnc,
+            time_vao_ca,
+            time_het_ca,
+            id_ca_xnc,
+            time_xnc,
+            ly_do,
+        } = req.body
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.xac_nhan_cong.ly_do': ly_do,
+                    'noi_dung.xac_nhan_cong.time_xnc': time_xnc,
+                    'noi_dung.xac_nhan_cong.time_vao_ca': time_vao_ca,
+                    'noi_dung.xac_nhan_cong.time_het_ca': time_het_ca,
+                    'noi_dung.xac_nhan_cong.ca_xnc': ca_xnc,
+                    'noi_dung.xac_nhan_cong.id_ca_xnc': id_ca_xnc,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+            const id_user_nhan_arr = edit_dx.id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Đề xuất cộng công',
+                link,
+                edit_dx.file_kem
+            )
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+            return functions.success(res, 'get data success', {
+                edit_dx,
+            })
+        }
+    } catch (error) {
+        console.error('Failed ', error)
+        return functions.setError(res, error)
+    }
+}
+exports.edit_nghi_thai_san = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            kieu_duyet,
+            id_user_duyet,
+            id_user_theo_doi,
+            type_duyet,
+            ngaybatdau_nghi_ts,
+            ngayketthuc_nghi_ts,
+            ly_do,
+        } = req.body
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+        let createDate = Math.floor(Date.now() / 1000)
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.nghi_thai_san.ly_do': ly_do,
+                    'noi_dung.nghi_thai_san.ngaybatdau_nghi_ts': ngaybatdau_nghi_ts,
+                    'noi_dung.nghi_thai_san.ngayketthuc_nghi_ts': ngayketthuc_nghi_ts,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+            const id_user_nhan_arr = edit_dx.id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                name_dx,
+                id_user_theo_doi,
+                'Đề xuất nghỉ thai sản',
+                edit_dx.file_kem,
+                link
+            )
+            await Pregnant.deleteMany({
+                fromDx: id_dx
+            });
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+            return functions.success(res, 'get data success', {
+                edit_dx,
+            })
+        }
+    } catch (error) {
+        console.error('Failed ', error)
+        return functions.setError(res, error)
+    }
+}
+exports.edit_phong_hop = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            noi_dung,
+            kieu_duyet,
+            id_user_duyet,
+            id_user_theo_doi,
+            type_duyet,
+            bd_hop,
+            type_time,
+            end_hop,
+            phong_hop,
+            ly_do,
+        } = req.body
+        let createDate = Math.floor(Date.now() / 1000)
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.su_dung_phong_hop.ly_do': ly_do,
+                    'noi_dung.su_dung_phong_hop.bd_hop': bd_hop,
+                    'noi_dung.su_dung_phong_hop.end_hop': end_hop,
+                    'noi_dung.su_dung_phong_hop.phong_hop': phong_hop,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+            const id_user_nhan_arr = edit_dx.id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Đề xuất sử dụng phòng họp',
+                link,
+                edit_dx.file_kem
+            )
+            await Meeting.deleteMany({
+                fromDx: id_dx
+            });
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+            return functions.success(res, 'get data success', {
+                edit_dx,
+            })
+        }
+    } catch (error) {
+        console.error('Failed ', error)
+        return functions.setError(res, error)
+    }
+}
+exports.edit_thuong_phat = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            kieu_duyet,
+            id_user_duyet,
+            id_user_theo_doi,
+            type_duyet,
+            type_tp,
+            so_tien_tp,
+            nguoi_phat_tp,
+            id_nguoi_tp,
+            time_tp,
+            ly_do,
+        } = req.body
+        let createDate = Math.floor(Date.now() / 1000)
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+        let file_kem = req.files.file_kem
+        let nguoi_tp;
+        if (type_tp == 1) {
+            nguoi_tp = id_nguoi_tp
+        } else {
+            nguoi_tp = nguoi_phat_tp
+        }
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.thuong_phat.ly_do': ly_do,
+                    'noi_dung.thuong_phat.so_tien_tp': so_tien_tp,
+                    'noi_dung.thuong_phat.time_tp': time_tp,
+                    'noi_dung.thuong_phat.nguoi_tp': nguoi_tp,
+                    'noi_dung.thuong_phat.type_tp': type_tp,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+            const id_user_nhan_arr = edit_dx.id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Đề xuất thưởng phạt',
+                link,
+                edit_dx.file_kem
+            )
+
+            await ThuongPhat.deleteMany({
+                fromDx: id_dx
+            });
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+            return functions.success(res, 'get data success', {
+                edit_dx,
+            })
+        }
+    } catch (error) {
+        console.error('Failed ', error)
+        return functions.setError(res, error)
+    }
+}
+exports.edit_hoa_hong = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            noi_dung,
+            kieu_duyet,
+            id_user_duyet,
+            id_user_theo_doi,
+            type_duyet,
+            chu_ky,
+            type_time,
+            item_mdt_date,
+            dt_money,
+            ly_do,
+            name_dt,
+            time_hh,
+        } = req.body
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+        let createDate = Math.floor(Date.now() / 1000)
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.hoa_hong.ly_do': ly_do,
+                    'noi_dung.hoa_hong.chu_ky': chu_ky,
+                    'noi_dung.hoa_hong.item_mdt_date': item_mdt_date,
+                    'noi_dung.hoa_hong.dt_money': dt_money,
+                    'noi_dung.hoa_hong.name_dt': name_dt,
+                    'noi_dung.hoa_hong.time_hh': time_hh,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+            const id_user_nhan_arr = edit_dx.id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Đề xuất hoa hồng',
+                link,
+                edit_dx.file_kem
+            )
+            await TinhluongRose.deleteMany({
+                fromDx: id_dx
+            });
+            await TinhluongRdtHistory.deleteMany({
+                fromDx: id_dx
+            });
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+            return functions.success(res, 'get data success', {
+                edit_dx,
+            })
+        }
+    } catch (error) {
+        console.error('Failed ', error)
+        return functions.setError(res, error)
+    }
+}
+exports.edit_dmvs = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            // type_dx,
+            kieu_duyet,
+            id_user_duyet,
+            id_user_theo_doi,
+            type_duyet,
+            ngay_di_muon_ve_som,
+            time_batdau,
+            // time_batdau_tomorrow,
+            time_ketthuc,
+            // time_ketthuc_tomorrow,
+            ca_lam_viec,
+            ly_do,
+        } = req.body
+        let id_user = req.user.data.idQLC
+        let com_id = -1
+        if (req.user.data.com_id) {
+            com_id = req.user.data.com_id
+        }
+        let name_user = req.user.data.userName
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return res.status(404).json('bad request')
+        } else {
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.di_muon_ve_som.ly_do': ly_do,
+                    'noi_dung.di_muon_ve_som.ngay_di_muon_ve_som': ngay_di_muon_ve_som,
+                    'noi_dung.di_muon_ve_som.time_batdau': time_batdau,
+                    'noi_dung.di_muon_ve_som.time_ketthuc': time_ketthuc,
+                    'noi_dung.di_muon_ve_som.ca_lam_viec': ca_lam_viec,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+            const id_user_nhan_arr = edit_dx.id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Đề xuất đi muộn về sớm',
+                link
+            )
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+            res.status(200).json({ edit_dx, })
+        }
+    } catch (error) {
+        console.error('Failed to add', error)
+        res.status(500).json({ error: 'Failed to add' })
+    }
+}
+exports.edit_nprn = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            kieu_duyet, // 0-kiểm duyệt lần lượt hay đồng thời
+            id_user_duyet,
+            id_user_theo_doi,
+            type_nghi,
+            ly_do,
+            bd_nghi,
+            // kt_nghi,
+            time_bd_nghi,
+            time_kt_nghi,
+            ca_nghi,
+            type_duyet,
+        } = req.body
+        let id_user = req.user.data.idQLC
+        let com_id = -1
+        if (req.user.data.com_id) {
+            com_id = req.user.data.com_id
+        }
+        let name_user = req.user.data.userName
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return res.status(404).json('bad request')
+        } else {
+
+            const edit_dx = await De_Xuat.findOneAndUpdate({
+                _id: id_dx
+            }, {
+                $set: {
+                    name_dx: name_dx,
+                    'noi_dung.nghi_phep_ra_ngoai.ly_do': ly_do,
+                    'noi_dung.nghi_phep_ra_ngoai.type_nghi': type_nghi,
+                    'noi_dung.nghi_phep_ra_ngoai.bd_nghi': bd_nghi,
+                    'noi_dung.nghi_phep_ra_ngoai.ca_nghi': ca_nghi,
+                    'noi_dung.nghi_phep_ra_ngoai.time_bd_nghi': time_bd_nghi,
+                    'noi_dung.nghi_phep_ra_ngoai.time_kt_nghi': time_kt_nghi,
+                    id_user_duyet: id_user_duyet,
+                    id_user_theo_doi: id_user_theo_doi,
+                    file_kem: link_download.map((file) => ({ file })),
+                    kieu_duyet: kieu_duyet,
+                    type_duyet: 0,
+                    time_create: Math.floor(Date.now() / 1000),
+                    edited: true,
+                }
+            })
+
+            let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+            const id_user_nhan_arr = edit_dx.id_user_duyet.split(',')
+            id_user_theo_doi = id_user_theo_doi.split(',')
+            functions.chat(
+                id_user,
+                id_user_nhan_arr,
+                com_id,
+                'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                id_user_theo_doi,
+                'Đề xuất đi muộn về sớm',
+                link
+            )
+
+            await His_Handle.deleteMany({
+                id_dx: id_dx,
+            })
+
+            res.status(200).json({ edit_dx, })
+        }
+    } catch (error) {
+        console.error('Failed to add', error)
+        res.status(500).json({ error: 'Failed to add' })
+    }
+}
+exports.edit_ngay_nhan_luong = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            kieu_duyet, // 0-kiểm duyệt lần lượt hay đồng thời
+            id_user_duyet,
+            id_user_theo_doi,
+            phong_ban,
+            thang_ap_dung,
+            ngay_bat_dau,
+            ngay_ket_thuc,
+            ly_do,
+        } = req.body
+        let id_user = req.user.data.idQLC
+        let com_id = -1
+        if (req.user.data.com_id) {
+            com_id = req.user.data.com_id
+        }
+        let name_user = req.user.data.userName
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return res.status(404).json('bad request ')
+        } else {
+            const old_dx = await De_Xuat.findOne({
+                _id: id_dx
+            }).lean();
+            const prev_rec = await ReceiveSalaryDay.findOne({
+                fromDx: id_dx
+            }).lean();
+            if (prev_rec) {
+                const prev_rec_apply_month = prev_rec.apply_month;
+                const prev_rec_start_date = new Date(prev_rec.start_date).getTime() / 1000;
+                const prev_rec_end_date = new Date(prev_rec.end_date).getTime() / 1000;
+                const nd = old_dx.noi_dung.nhap_ngay_nhan_luong
+                if (nd.thang_ap_dung != prev_rec_apply_month ||
+                    nd.ngay_bat_dau != prev_rec_start_date ||
+                    nd.ngay_ket_thuc != prev_rec_end_date) {
+                    return res.status(500).json({ message: 'Không thể chỉnh sửa: Ngày nhận lương đã bị thay đổi bởi nguồn khác sau khi đề xuất này được duyệt' });
+                }
+                const edit_dx = await De_Xuat.findOneAndUpdate({
+                    _id: id_dx
+                }, {
+                    $set: {
+                        name_dx: name_dx,
+                        'noi_dung.nhap_ngay_nhan_luong.ly_do': ly_do,
+                        'noi_dung.nhap_ngay_nhan_luong.thang_ap_dung': thang_ap_dung,
+                        'noi_dung.nhap_ngay_nhan_luong.ngay_bat_dau': ngay_bat_dau,
+                        'noi_dung.nhap_ngay_nhan_luong.ngay_ket_thuc': ngay_ket_thuc,
+                        id_user_duyet: id_user_duyet,
+                        id_user_theo_doi: id_user_theo_doi,
+                        file_kem: link_download.map((file) => ({ file })),
+                        kieu_duyet: kieu_duyet,
+                        type_duyet: 0,
+                        time_create: Math.floor(Date.now() / 1000),
+                        edited: true,
+                    }
+                })
+
+                let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+                const id_user_nhan_arr = id_user_duyet.split(',')
+                id_user_theo_doi = id_user_theo_doi.split(',')
+                functions.chat(
+                    id_user,
+                    id_user_nhan_arr,
+                    com_id,
+                    'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                    id_user_theo_doi,
+                    'Nhập ngày nhận lương',
+                    link
+                )
+                await ReceiveSalaryDay.deleteMany({
+                    fromDx: id_dx
+                });
+                await His_Handle.deleteMany({
+                    id_dx: id_dx,
+                })
+                return res.status(200).json({ edit_dx, })
+            } else {
+                return res.status(500).json({ message: 'Không tìm thấy bản ghi ngày nhận lương trước đó' })
+            }
+        }
+    } catch (error) {
+        console.error('Failed to add', error)
+        res.status(500).json({ error: 'Failed to add' + error })
+    }
+}
+exports.edit_bo_nhiem = async(req, res) => {
+    try {
+        let {
+            id_dx,
+            name_dx,
+            kieu_duyet, // 0-kiểm duyệt lần lượt hay đồng thời
+            id_user_duyet,
+            id_user_theo_doi,
+            ly_do,
+            thanhviendc_bn,
+            initial_chucvu_hientai,
+            initial_organizeDetailId,
+            initial_thanhviendc_bn,
+            initial_chucvu_dx_bn,
+            initial_new_organizeDetailId,
+            chucvu_hientai,
+            chucvu_dx_bn,
+            organizeDetailId,
+            new_organizeDetailId,
+        } = req.body
+        let id_user = ''
+        let com_id = ''
+        let name_user = ''
+        if (req.user.data.type == 2) {
+            id_user = req.user.data.idQLC
+            com_id = req.user.data.com_id
+            name_user = req.user.data.userName
+        } else {
+            return functions.setError(res, 'không có quyền truy cập', 400)
+        }
+
+        let link_download = []
+        if (req.files.fileKem) {
+            let file_kem = req.files.fileKem
+            let listFile = []
+            if (Array.isArray(file_kem)) {
+                // Người dùng gửi nhiều file hoặc một file duy nhất
+                file_kem.forEach((file) => {
+                    functions.uploadFileVanThu(id_user, file)
+                    listFile.push(file.name)
+                })
+            } else {
+                // Người dùng chỉ gửi một file
+                functions.uploadFileVanThu(id_user, file_kem)
+                listFile.push(file_kem.name)
+            }
+            link_download = listFile
+        }
+        if (!name_dx ||
+            !name_user ||
+            !id_user ||
+            !id_user_duyet ||
+            !id_user_theo_doi
+        ) {
+            return functions.setError(res, 'không thể thực thi', 400)
+        } else {
+            const idUserBoNhiem = initial_thanhviendc_bn;
+            const initial_user_dcBN = await User.findOne({
+                idQLC: idUserBoNhiem,
+                'inForPerson.employee.com_id': com_id,
+                type: 2
+            }).lean()
+            if (initial_user_dcBN) {
+                const current_positionId = initial_user_dcBN.inForPerson.employee.position_id;
+                const current_organizeDetailId = initial_user_dcBN.inForPerson.employee.organizeDetailId
+                if (current_positionId != initial_chucvu_dx_bn) {
+                    return res.status(500).json({ message: 'Không thể chỉnh sửa: chức vụ của nhân viên ở đề xuất cũ đã được thay đổi từ nguồn khác sau khi đề xuất này được duyệt' })
+                }
+                if (current_organizeDetailId != initial_new_organizeDetailId) {
+                    return res.status(500).json({ message: 'Không thể chỉnh sửa: cơ cấu tổ chức của nhân viên ở đề xuất cũ đã được thay đổi từ nguồn khác sau khi đề xuất này được duyệt' })
+                }
+                const cocau = await OrganizeDetail.findOne({
+                    id: Number(initial_organizeDetailId),
+                    comId: com_id,
+                }).lean();
+                if (cocau) {
+                    const user = await User.findOneAndUpdate({
+                        idQLC: idUserBoNhiem,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2
+                    }, {
+                        $set: {
+                            'inForPerson.employee.listOrganizeDetailId': cocau.listOrganizeDetailId,
+                            'inForPerson.employee.organizeDetailId': cocau.id,
+                            'inForPerson.employee.position_id': Number(initial_chucvu_hientai),
+                        }
+                    }, { new: true })
+                    const edit_dx = await De_Xuat.findOneAndUpdate({
+                        _id: id_dx
+                    }, {
+                        $set: {
+                            name_dx: name_dx,
+                            'noi_dung.bo_nhiem.ly_do': ly_do,
+                            'noi_dung.bo_nhiem.thanhviendc_bn': thanhviendc_bn,
+                            'noi_dung.bo_nhiem.organizeDetailId': organizeDetailId,
+                            'noi_dung.bo_nhiem.chucvu_hientai': chucvu_hientai,
+                            'noi_dung.bo_nhiem.chucvu_dx_bn': chucvu_dx_bn,
+                            'noi_dung.bo_nhiem.new_organizeDetailId': new_organizeDetailId,
+                            id_user_duyet: id_user_duyet,
+                            id_user_theo_doi: id_user_theo_doi,
+                            file_kem: link_download.map((file) => ({ file })),
+                            kieu_duyet: kieu_duyet,
+                            type_duyet: 0,
+                            time_create: Math.floor(Date.now() / 1000),
+                            edited: true,
+                        }
+                    })
+
+                    let link = `https://hungha365.com/van-thu-luu-tru/trang-quan-ly-de-xuat/${id_dx}`
+
+                    const id_user_nhan_arr = id_user_duyet.split(',')
+                    id_user_theo_doi = id_user_theo_doi.split(',')
+                    functions.chat(
+                        id_user,
+                        id_user_nhan_arr,
+                        com_id,
+                        'Đề xuất đã đươc chỉnh sửa, cần bạn duyệt lại',
+                        id_user_theo_doi,
+                        'Đề xuất bổ nhệm ',
+                        link,
+                        edit_dx.file_kem
+                    )
+                    await His_Handle.deleteMany({
+                        id_dx: id_dx,
+                    })
+                    return functions.success(res, 'get data success', {
+                        edit_dx,
+                    })
+                } else {
+                    return res.status(500).json({ message: 'Không tìm thấy cơ cấu của nhân viên được bổ nhiêm ờ đề xuất cũ' });
+                }
+            } else {
+                return res.status(500).json({ message: 'Không tìm thấy nhân viên cần bổ nhiệm cũ trên hệ thống' })
+            }
+        }
+    } catch (error) {
+        console.error('Failed ', error)
         return functions.setError(res, error)
     }
 }

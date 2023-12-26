@@ -11,6 +11,7 @@ const path = require('path');
 //check ảnh
 const { promisify } = require('util');
 const https = require('https');
+const jwt = require('jsonwebtoken');
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const MAX_IMAGE_SIZE = 8400000;
@@ -207,7 +208,8 @@ exports.uploadImage = async (time_created, file_img) => {
     return filename;
 }
 
-exports.uploadFile = async (time_created, file_img) => {
+exports.uploadFile = async (time_created, file_img, id_flc) => {
+   try {
     let filename = '';
     const date = new Date(time_created * 1000);
     const year = date.getFullYear();
@@ -215,14 +217,12 @@ exports.uploadFile = async (time_created, file_img) => {
     const day = ('0' + date.getDate()).slice(-2);
     const timestamp = Math.round(date.getTime() / 1000);
 
-    const dir = `../files/${year}/${month}/${day}/`;
+    const dir = `../storage/base365/timviec365/file/${year}/${month}/${day}/${id_flc}`;
+    const filePath = `../storage/base365/timviec365/file/${year}/${month}/${day}/${id_flc}/${file_img.name}`;
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
 
-    let fileExtension = file_img.name.split(".").pop();
-    filename = `file_${timestamp}.${fileExtension}`;
-    const filePath = dir + filename;
     fs.readFile(file_img.path, (err, data) => {
         if (err) {
             console.log(err)
@@ -233,7 +233,10 @@ exports.uploadFile = async (time_created, file_img) => {
             }
         });
     });
-    return `/files/${year}/${month}/${day}/${filename}`;
+    return `/file/${year}/${month}/${day}/${id_flc}/${file_img.name}`;
+   } catch (error) {
+    console.log(error)
+   }
 }
 
 exports.getLinkFile = (time, fileName) => {
@@ -406,4 +409,18 @@ exports.uploadImageUV = async (time_created, file_img, path) => {
     } catch (error) {
         console.log(error)
     }
+}
+
+exports.checkTokenUser = async (req, res, next) => {
+    try {
+        if (req.headers && req.headers.authorization) {
+            const token = req.headers.authorization.split(' ')[1];
+            return jwt.decode(token).data.idTimViec365
+        } else {
+            return null;
+        }
+    } catch (error) {
+        return null
+    }
+
 }

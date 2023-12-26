@@ -3,30 +3,33 @@ const Customer = require("../../models/crm/Customer/customer");
 const Users = require('../../models/Users');
 const CRM_customer_group = require('../../models/crm/Customer/customer_group');
 const ManageNghiPhep = require("../../models/ManageNghiPhep");
-
+const axios = require('axios');
 
 // true là có nghỉ phép 
 // false là không có nghỉ phép 
-const checkNghiPhepInternal = async(idChuyenVien) => {
+const checkNghiPhepInternal = async(idChuyenVien, com_id) => {
     try {
-        let time = new Date().getTime();
-        let dataNghi = await ManageNghiPhep.find({
-            idFrom: Number(idChuyenVien),
-            $and: [{
-                from: {
-                    $lte: time
-                }
-            }, {
-                end: {
-                    $gte: time
-                }
-            }]
+        console.log("Kiểm tra tạo tài khoản", "checkNghiPhepInternal", idChuyenVien, com_id)
+        let response = await axios({
+            method: 'post',
+            url: 'https://api.timviec365.vn/api/qlc/shift/list_shift_user_new',
+            data: {
+                u_id: idChuyenVien,
+                c_id: Number(com_id)
+            },
+            headers: { 'Content-Type': 'multipart/form-data' },
         });
-        if (dataNghi.length > 0) {
-            return true;
-        } else {
+        if (response && response.data && response.data.data && response.data.data.shift && response.data.data.shift.length) {
             return false;
+        } else {
+            return true;
         }
+
+        // if (dataNghi.length > 0) {
+        //     return true;
+        // } else {
+        //     return false;
+        // }
 
     } catch (e) {
         console.log(e);
@@ -77,7 +80,7 @@ exports.addCustomer = async(name, email, phone, emp_id, id_cus_from, resoure, st
 }
 
 
-exports.takeDataChuyenVien = async(gr_id) => {
+exports.takeDataChuyenVien = async(gr_id, com_id) => {
     try {
         let listIdChuyenVien = [];
         let listDep = [];
@@ -110,39 +113,78 @@ exports.takeDataChuyenVien = async(gr_id) => {
             }
         }]);
 
+        let listTempt = [];
+        for (let i = 0; i < listIdChuyenVien.length; i++) {
+            let obj = listUser.find((e) => e.idQLC == listIdChuyenVien[i]);
+            if (obj) {
+                listTempt.push(obj)
+            }
+        };
+        listUser = listTempt;
         let stt = 0;
         if (group_father.orderexpert) {
             stt = Number(group_father.orderexpert)
-        }
+        };
+        console.log("Số thứ tự ban đầu", stt)
         let chuyenvien = listUser[stt];
-
         // kiểm tra nghỉ phép => Lấy ra người không nghỉ phép 
         let flag = true;
-        while (flag) {
-            if (stt > (listUser.length - 1)) {
-                stt = 0;
-            };
-            if (!listUser[stt]) {
-                stt = 0;
-            };
-            console.log(group_father.company_id, listDep, listIdChuyenVien, gr_id)
-            let check = await checkNghiPhepInternal(listUser[stt].idQLC);
-            if (check) {
-                stt = stt + 1;
-                if (stt > (listUser.length - 1)) {
-                    stt = 0;
+        if (!listUser[stt]) {
+            stt = stt + 1;
+        };
+        if (stt > (listUser.length - 1)) {
+
+            stt = 0;
+        };
+        let stone = stt;
+
+        // if (stt == 0) {
+        //     stone = listUser.length - 1
+        // };
+
+        // kiểm tra nghỉ phép
+        // máy chủ lấy số theo giờ GMT + 7
+        // không chuyển id ngày chủ nhật 
+        let day = new Date().getDay();
+
+        if (day != 0) {
+            // kiểm tra các nhân viên trong nhóm xem có đi làm không 
+            while (flag && (stt != stone)) {
+                // lưu ý đin 1 vòng rồi thôi
+                if (!listUser[stt]) {
+                    stt = stt + 1;
                 };
-                chuyenvien = listUser[stt];
-            } else {
-                flag = false;
-            }
-        }
+                let check = await checkNghiPhepInternal(listUser[stt].idQLC, com_id); // nếu không có lịch làm việc thì chia đều 
+                if (check) {
+                    stt = stt + 1;
+                    if (stt > (listUser.length - 1)) {
+                        stt = 0;
+                    };
+
+                } else {
+                    console.log("Chuyen vien di lam", stt)
+                    flag = false;
+                }
+            };
+        };
+
+        // cập nhật chuyên viên 
+        chuyenvien = listUser[stt];
+
+
         // cập nhât số thứ tự mới để chia giỏ 
         let new_stt = stt + 1;
         if (new_stt > (listUser.length - 1)) {
             new_stt = 0;
         };
 
+        if (new_stt == stone) {
+            new_stt = new_stt + 1;
+            if (new_stt > (listUser.length - 1)) {
+                new_stt = 0;
+            }
+        }
+        console.log("stt moi", new_stt, listUser.length)
         await CRM_customer_group.updateMany({
             gr_id: gr_id
         }, {

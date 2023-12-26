@@ -70,4 +70,8 @@ router.post('/homePagefilterPost', formData.parse(), controller.homePagefilterPo
 //danh sách trang chủ filter gia sư
 router.post('/homePage', formData.parse(), controller.homePage);
 
+router.post('/UpdatePoint', functions.checkToken, formData.parse(), controller.UpdatePoint);
+
+router.post('/UpdateViews', functions.checkToken, formData.parse(), controller.UpdateViews);
+
 module.exports = router;

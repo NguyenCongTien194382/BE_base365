@@ -69,6 +69,10 @@ const CC365_TimeSheetSchema = new Schema({
         type: Number,
         default: 1
     },
+    status_confirm: {
+        type: Number,
+        default: 0
+    },
     ts_error: {
         type: String,
         default: ""
@@ -87,7 +91,7 @@ const CC365_TimeSheetSchema = new Schema({
     timestamp: true
 });
 // lúc insert lấy dữ liệu ở bảng Counter ra => tăng lên 1 rồi save 
-CC365_TimeSheetSchema.pre('save', async function(next) {
+CC365_TimeSheetSchema.pre('save', async function (next) {
     try {
         let maxId = await connection.model("CC365_TimeSheet", CC365_TimeSheetSchema).find({}, { sheet_id: 1 }).sort({ sheet_id: -1 }).limit(1);
         console.log(maxId);

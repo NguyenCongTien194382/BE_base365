@@ -1099,7 +1099,25 @@ exports.saveHisForApp = async (req, res) => {
     const now = new Date(time)
     let listFindSettingQR
     if (com_id && token && idQLC && ip && time && lat && long) {
+
+      let type_timesheet = 3
+      if (!location_name) {
+        const findCompany = await Users.findOne(
+          {
+            idQLC: com_id,
+            type: 1,
+          },
+          { address: 1 }
+        )
+
+        location_name = findCompany ? findCompany.address : ''
+        if (findCompany && findCompany.inForCompany && findCompany.inForCompany.cds && findCompany.inForCompany.cds.type_timesheet)
+          type_timesheet = findCompany.inForCompany.cds.type_timesheet
+      }
+
+
       // kiểm tra mã QR
+
 
       const dataToken = await jwt.verify(token, process.env.NODE_SERCET)
 
@@ -1123,6 +1141,7 @@ exports.saveHisForApp = async (req, res) => {
             idQLC: 1,
             position_id: '$inForPerson.employee.position_id',
             listOrganizeDetailId: '$inForPerson.employee.listOrganizeDetailId',
+            userName: 1
           }
         ).lean()
 
@@ -1161,12 +1180,37 @@ exports.saveHisForApp = async (req, res) => {
             },
           ])
           const shifts = await Shifts.find({ com_id: Number(com_id) }).lean()
-          if (llv.length < 1)
-            return functions.setError(
-              res,
-              'Nhân viên không tồn tại lịch làm việc',
-              500
-            )
+          if (llv.length < 1) {
+            if (type_timesheet !== 2) {
+              if (!shiftId) {
+                const noShift = await insertTimeKeeping(
+                  com_id,
+                  idQLC,
+                  time,
+                  lat,
+                  long,
+                  ip,
+                  0,
+                  img,
+                  location_name,
+                  'QR Code'
+                )
+                return noShift.success
+                  ? functions.success(
+                    res,
+                    'Chấm công thành công ( Ca không tồn tại)',
+                    {
+                      idQLC: findUser.idQLC,
+                      ep_name: findUser.userName,
+                      image: noShift.data.image,
+                    }
+                  )
+                  : functions.setError(res, noShift.message, 500)
+              }
+              else return functions.setError(res, "Chấm công thất bại :Ca làm việc không thỏa mãn", 500)
+            }
+            return functions.setError(res, "Chấm công thất bại : Không có ca thỏa mãn", 500)
+          }
 
           const cy_detail = llv[0].cycle.cy_detail
 
@@ -1187,10 +1231,9 @@ exports.saveHisForApp = async (req, res) => {
           }
 
           // lay shift hien tai
+
           let temp = await getListShiftEmp(com_id, idQLC, time)
-          console.log('------------------------')
-          console.log(temp)
-          console.log('------------------------')
+
           if (shiftId)
             temp.shift = temp.shift.filter((e) => e.shift_id === shiftId)
 
@@ -1279,7 +1322,7 @@ exports.saveHisForApp = async (req, res) => {
             console.log('list_loc', list_loc)
             console.log('data_location.length', data_location.length)
             if (data_location && data_location.length > 0) {
-              if (list_loc.length > 0) {
+              if (list_loc && list_loc.length > 0) {
                 let kt = 0
                 let location = data_location.filter((e) =>
                   list_loc.includes(Number(e.cor_id))
@@ -1340,7 +1383,7 @@ exports.saveHisForApp = async (req, res) => {
             }
             // kiểm tra ip
             if (wifi.length > 0) {
-              if (list_ip.length > 0) {
+              if (list_ip && list_ip.length > 0) {
                 const curIpId = wifi.find((item) => item.ip_access == ip)
                 let id_acc = curIpId ? curIpId.id : 0
 
@@ -1480,42 +1523,39 @@ exports.saveHisForApp = async (req, res) => {
                 list_shift_timeSheet.includes(Number(e.shift_id))
               )
             // else shiftInfo.shift = []
-            if (!location_name) {
-              const findCompany = await Users.findOne(
-                {
-                  idQLC: com_id,
-                  type: 1,
-                },
-                { address: 1 }
-              )
 
-              location_name = findCompany ? findCompany.address : ''
-            }
             // nếu không tồn tại ca -> vẫn chấm công
             if (shiftInfo.shift.length == 0) {
-              console.log(
-                '----------------------Không có ca thỏa mãn------------------------------'
-              )
-              return functions.setError(res, 'Chấm công thất bại : Không có ca thỏa mãn')
-              // const noShift = await insertTimeKeeping(
-              //   com_id,
-              //   idQLC,
-              //   time,
-              //   lat,
-              //   long,
-              //   ip,
-              //   0,
-              //   img,
-              //   location_name,
-              //   'QR Code'
-              // )
-              // return noShift.success
-              //   ? functions.success(
-              //     res,
-              //     'Chấm công thành công ( Ca không tồn tại)',
-              //     {}
-              //   )
-              //   : functions.setError(res, noShift.message, 500)
+              console.log("Không lịch làm việc")
+              if (type_timesheet !== 2) {
+                if (!shiftId) {
+                  const noShift = await insertTimeKeeping(
+                    com_id,
+                    idQLC,
+                    time,
+                    lat,
+                    long,
+                    ip,
+                    0,
+                    img,
+                    location_name,
+                    'QR Code'
+                  )
+                  return noShift.success
+                    ? functions.success(
+                      res,
+                      'Chấm công thành công ( Ca không tồn tại)',
+                      {
+                        idQLC: findUser.idQLC,
+                        ep_name: findUser.userName,
+                        image: noShift.data.image,
+                      }
+                    )
+                    : functions.setError(res, noShift.message, 500)
+                }
+                else return functions.setError(res, "Chấm công thất bại :Ca làm việc không thỏa mãn", 500)
+              }
+              return functions.setError(res, "Chấm công thất bại : Không có ca thỏa mãn", 500)
             }
             // tồn tại 1 ca
             else if (shiftInfo.shift.length == 1) {
@@ -1568,10 +1608,10 @@ exports.saveHisForApp = async (req, res) => {
                 if (tempShift.success) success++
               }
 
-              if (success == 2) {
+              if (success >= 2) {
                 return functions.success(res, 'Điểm danh thành công', { image })
               }
-              console.log('Điểm danh 2 ca lỗi')
+              console.log('Điểm danh nhiều ca lỗi')
               return functions.setError(res, 'Điểm danh 2 ca lỗi', 500)
             }
 

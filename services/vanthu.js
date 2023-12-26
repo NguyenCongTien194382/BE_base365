@@ -961,7 +961,8 @@ exports.browseProposals = async(res, His_Handle, De_Xuat, _id, check, id_user, c
                         ro_time: ro_time.toISOString(),
                         ro_note: ndhh.ly_do,
                         ro_price: ndhh.dt_money,
-                        fromDx: check._id
+                        fromDx: check._id,
+                        ro_time_created: new Date(ndhh.item_mdt_date),
                     })
                     await createhh.save();
 
@@ -1778,7 +1779,12 @@ exports.browseProposals = async(res, His_Handle, De_Xuat, _id, check, id_user, c
                     com_id: com_id,
                 })
                 if (!empRSD) {
-                    let max_id = await ReceiveSalaryDay.findOne({}, {}, { sort: { _id: -1 } }).lean() || 0;
+                    let max_id = await ReceiveSalaryDay.findOne({}, {}, { sort: { _id: -1 } }).lean();
+                    if (max_id) {
+                        max_id = max_id._id;
+                    } else {
+                        max_id = 0;
+                    }
                     empRSD = new ReceiveSalaryDay({
                         _id: max_id + 1,
                         com_id: com_id,
@@ -1787,8 +1793,9 @@ exports.browseProposals = async(res, His_Handle, De_Xuat, _id, check, id_user, c
                         start_date: new Date(nd.ngay_bat_dau * 1000),
                         end_date: new Date(nd.ngay_ket_thuc * 1000),
                         update_time: new Date(),
+                        fromDx: check._id
                     });
-                    empRSD.save();
+                    await empRSD.save();
                 } else {
                     empRSD = await ReceiveSalaryDay.findOneAndUpdate({
                         ep_id: check.id_user,
@@ -1799,6 +1806,7 @@ exports.browseProposals = async(res, His_Handle, De_Xuat, _id, check, id_user, c
                             start_date: new Date(nd.ngay_bat_dau * 1000),
                             end_date: new Date(nd.ngay_ket_thuc * 1000),
                             update_time: new Date(),
+                            fromDx: check._id
                         }
                     }, {
                         new: true
@@ -1838,7 +1846,6 @@ exports.browseProposals = async(res, His_Handle, De_Xuat, _id, check, id_user, c
                     if (maxID) {
                         newID = Number(maxID) + 1;
                     }
-                    console.log("newID", newID)
                     const createHis = new His_Handle({
                         _id: newID,
                         id_user: id_user,
@@ -2292,6 +2299,7 @@ const browseMeeting = async(His_Handle, De_Xuat, _id, check, id_user, com_id) =>
                         type: 1,
                         is_send_mail: 1,
                         created_at: new Date().getTime() / 1000,
+                        fromDx: check._id
                     })
                     await meeting.save();
                     meetings.push(meeting);
@@ -2317,34 +2325,34 @@ const browseAbsent = async(His_Handle, De_Xuat, _id, check, id_user, com_id) => 
     const id_ng_ban_giao = nd.ng_ban_giao_CRM;
     const ds_ngaynghi = nd.nd;
     const dataList = [];
-    for (let i = 0; i < ds_ngaynghi.length; i++) {
-        let start_time;
-        let end_time;
-        const ca_nghi = ds_ngaynghi[i].ca_nghi;
-        if (ca_nghi) {
-            const shift = await Shifts.findOne({
-                shift_id: Number(ca_nghi)
-            });
-            start_time = shift.start_time;
-            end_time = shift.end_time;
-        } else {
-            start_time = '08:00:00'
-            end_time = '18:00:00'
+    if (id_ng_ban_giao) {
+        for (let i = 0; i < ds_ngaynghi.length; i++) {
+            let start_time;
+            let end_time;
+            const ca_nghi = ds_ngaynghi[i].ca_nghi;
+            if (ca_nghi) {
+                const shift = await Shifts.findOne({
+                    shift_id: Number(ca_nghi)
+                });
+                start_time = shift.start_time;
+                end_time = shift.end_time;
+            } else {
+                start_time = '08:00:00'
+                end_time = '18:00:00'
+            }
+            const start_time_string = `${ds_ngaynghi[i].bd_nghi}T${start_time}+07:00`
+            const end_time_string = `${ds_ngaynghi[i].bd_nghi}T${end_time}+07:00`
+            const data = new ManageNghiPhep({
+                idFrom: check.id_user,
+                idTo: id_ng_ban_giao,
+                com_id: com_id,
+                from: new Date(start_time_string).getTime(),
+                end: new Date(end_time_string).getTime(),
+                fromDx: check._id,
+            })
+            await data.save();
+            dataList.push(data)
         }
-        const start_time_string = `${ds_ngaynghi[i].bd_nghi}T${start_time}+07:00`
-        const end_time_string = `${ds_ngaynghi[i].bd_nghi}T${end_time}+07:00`
-        console.log(start_time_string)
-        console.log(end_time_string)
-        const data = new ManageNghiPhep({
-            idFrom: check.id_user,
-            idTo: id_ng_ban_giao,
-            com_id: com_id,
-            from: new Date(start_time_string).getTime(),
-            end: new Date(end_time_string).getTime(),
-            fromDx: check._id,
-        })
-        await data.save();
-        dataList.push(data)
     }
     return { message: 'Duyệt đề xuất nghỉ phép thành công', ManageNghiPhep: dataList };
 }
@@ -2630,6 +2638,79 @@ exports.cancel_dx = async(res, His_Handle, De_Xuat, _id, check, id_user, _id_use
                 fromDx: check._id
             });
         }
+        // đx bổ nhiệm
+        if (check.type_dx == 7) {
+            const nd = check.noi_dung.bo_nhiem
+            const idUserBoNhiem = nd.thanhviendc_bn;
+            const user_dcBN = await User.findOne({
+                idQLC: idUserBoNhiem,
+                'inForPerson.employee.com_id': com_id,
+                type: 2
+            }).lean()
+            if (user_dcBN) {
+                const current_positionId = user_dcBN.inForPerson.employee.position_id;
+                const current_organizeDetailId = user_dcBN.inForPerson.employee.organizeDetailId
+                if (current_positionId != nd.chucvu_dx_bn) {
+                    return res.status(200).json({ message: 'Không thể hủy duyệt: chức vụ của nhân viên đã được thay đổi từ nguồn khác sau khi đề xuất này được duyệt' })
+                }
+                if (current_organizeDetailId != nd.new_organizeDetailId) {
+                    return res.status(200).json({ message: 'Không thể hủy duyệt: cơ cấu tổ chức của nhân viên đã được thay đổi từ nguồn khác sau khi đề xuất này được duyệt' })
+                }
+                const cocau = await OrganizeDetail.findOne({
+                    id: Number(nd.organizeDetailId),
+                    comId: com_id,
+                }).lean();
+                if (cocau) {
+                    const user = await User.findOneAndUpdate({
+                        idQLC: idUserBoNhiem,
+                        'inForPerson.employee.com_id': com_id,
+                        type: 2
+                    }, {
+                        $set: {
+                            'inForPerson.employee.listOrganizeDetailId': cocau.listOrganizeDetailId,
+                            'inForPerson.employee.organizeDetailId': cocau.id,
+                            'inForPerson.employee.position_id': Number(nd.chucvu_hientai),
+                        }
+                    }, { new: true })
+                } else {
+                    return res.status(200).json({ message: 'Không tìm thấy cơ cấu' });
+                }
+            } else {
+                return res.status(200).json({ message: 'Không tìm thấy nhân viên cần bổ nhiệm trên hệ thống' })
+            }
+        }
+        //đề xuất luân chuyển công tác
+        if (check.type_dx == 8) {
+            const nd = check.noi_dung.luan_chuyen_cong_tac
+            const idUserBoNhiem = check.id_user;
+            const employee = await User.findOne({
+                idQLC: idUserBoNhiem,
+                'inForPerson.employee.com_id': com_id,
+                type: 2
+            })
+            const current_organizeDetailId = employee.inForPerson.employee.organizeDetailId
+            if (current_organizeDetailId != nd.noi_chuyen_den) {
+                return res.status(200).json({ message: 'Không thể hủy duyệt: cơ cấu tổ chức của nhân viên đã được thay đổi từ nguồn khác sau khi đề xuất này được duyệt' })
+            }
+            const cocau = await OrganizeDetail.findOne({
+                id: Number(nd.pb_nguoi_lc),
+                comId: com_id,
+            }).lean();
+            if (cocau) {
+                const user = await User.findOneAndUpdate({
+                    idQLC: idUserBoNhiem,
+                    'inForPerson.employee.com_id': com_id,
+                    type: 2
+                }, {
+                    $set: {
+                        'inForPerson.employee.listOrganizeDetailId': cocau.listOrganizeDetailId,
+                        'inForPerson.employee.organizeDetailId': cocau.id,
+                    }
+                }, { new: true })
+            } else {
+                return res.status(200).json({ message: 'Không tìm thấy cơ cấu' });
+            }
+        }
         // đx thai sản
         if (check.type_dx == 11) {
             await Pregnant.deleteMany({
@@ -2656,6 +2737,29 @@ exports.cancel_dx = async(res, His_Handle, De_Xuat, _id, check, id_user, _id_use
             await TinhluongRdtHistory.deleteMany({
                 fromDx: check._id
             });
+        }
+
+        // đx nhập ngày nhận lương
+        if (check.type_dx == 23) {
+            const prev_rec = await ReceiveSalaryDay.findOne({
+                fromDx: check._id
+            }).lean();
+            if (prev_rec) {
+                const prev_rec_apply_month = prev_rec.apply_month;
+                const prev_rec_start_date = new Date(prev_rec.start_date).getTime() / 1000;
+                const prev_rec_end_date = new Date(prev_rec.end_date).getTime() / 1000;
+                const nd = check.noi_dung.nhap_ngay_nhan_luong
+                if (nd.thang_ap_dung != prev_rec_apply_month ||
+                    nd.ngay_bat_dau != prev_rec_start_date ||
+                    nd.ngay_ket_thuc != prev_rec_end_date) {
+                    return res.status(200).json({ message: 'Không thể hủy duyệt: Ngày nhận lương đã bị thay đổi bởi nguồn khác sau khi đề xuất này được duyệt' });
+                }
+                await ReceiveSalaryDay.deleteMany({
+                    fromDx: check._id
+                });
+            } else {
+                return res.status(200).json({ message: 'Không tìm thấy bản ghi ngày nhận lương trước đó' })
+            }
         }
         let timeNow = new Date();
         const maxID = await this.getMaxID(His_Handle);
@@ -2685,6 +2789,11 @@ exports.cancel_dx = async(res, His_Handle, De_Xuat, _id, check, id_user, _id_use
         // đx nghỉ phép
         if (check.type_dx == 1) {
             await ManageNghiPhep.deleteMany({
+                fromDx: check._id,
+            })
+        }
+        if (check.type_dx == 12) {
+            await Meeting.deleteMany({
                 fromDx: check._id,
             })
         }

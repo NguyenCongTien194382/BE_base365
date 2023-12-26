@@ -1,5 +1,6 @@
 const Customer = require("../../models/crm/Customer/customer");
 const functions = require("../../services/functions");
+const axios = require("axios")
 
 const inforHHP = functions.inForHHP();
 const comID = inforHHP.company_id;
@@ -13,7 +14,7 @@ exports.emp_id = () => {
 // const group = 437
 // const type_crm = 2
 
-exports.addCustomer = async(name, email, phone, id_cus_from, resoure, status, group, type, link_multi = '', from = 'tv365') => {
+exports.addCustomer = async (name, email, phone, id_cus_from, resoure, status, group, type, link_multi = '', from = 'tv365') => {
     try {
         await axios({
             method: "post",
@@ -30,7 +31,7 @@ exports.addCustomer = async(name, email, phone, id_cus_from, resoure, status, gr
                 phone: phone,
                 email: email,
                 name: name,
-                // emp_id: emp_id
+                emp_id: 10020503
                 // cit_id: 0,
                 // district_id: 0,
                 // address: Hà Nội,
@@ -65,7 +66,7 @@ exports.addCustomer = async(name, email, phone, id_cus_from, resoure, status, gr
     }
 }
 
-exports.editCustomer = async(name, email, phone, group, id_cus_from, from = 'tv365') => {
+exports.editCustomer = async (name, email, phone, group, id_cus_from, from = 'tv365') => {
     try {
         let data = { updated_at: functions.getTimeNow() };
 
@@ -85,10 +86,56 @@ exports.editCustomer = async(name, email, phone, group, id_cus_from, from = 'tv3
     }
 }
 
-exports.deleteCustomer = async(id_cus_from, cus_from) => {
+exports.deleteCustomer = async (id_cus_from, cus_from) => {
     try {
         await Customer.deleteOne({ id_cus_from, cus_from });
         return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+
+exports.send_message = async (info_company, domain) => {
+    try {
+        console.log("vào gửi tin nhắn")
+        let liveChat = {
+            ClientId: info_company._id + '_liveChatV2',
+            ClientName: info_company.userName,//Tên công ty vừa dky
+            FromWeb: domain,
+            FromConversation: 160807
+        };
+        let dataSend = {
+            companyID: 59721, // idQLC của người gửi (ở đây mặc định là tài khoản 59721)
+            idChat: info_company._id, //_id của cty đăng ký
+            idKD: 10020503,//IdQLC của Hằng
+            name: info_company.userName,//Tên công ty vừa dky
+            domain: domain,
+            liveChat: liveChat
+        };
+        dataSend.InfoSupportTitle = "ĐĂNG KÝ CHẤM CÔNG";
+        dataSend.message = "Xin chào, tôi tên là " + dataSend.name + ", tôi vừa đăng ký tài khoản công ty trên " + dataSend.domain + ", tôi cần bạn hỗ trợ!";
+        dataSend.messageShow = dataSend.name + " vừa đăng ký tài khoản công ty trên " + dataSend.domain;
+
+        if (dataSend.idChat != 0 && dataSend.idKD != 0) {
+
+            let dataMess = {
+                ContactId: dataSend.idKD,
+                SenderID: dataSend.companyID,
+                Message: dataSend.messageShow,
+                MessageType: 'text',
+                LiveChat: JSON.stringify(dataSend.liveChat),
+                InfoSupport: JSON.stringify({
+                    Title: dataSend.InfoSupportTitle,
+                    Status: 0,
+                }),
+                MessageInforSupport: dataSend.message,
+            };
+            console.log("Dữ liệu gửi tin nhắn", dataMess);
+            await axios.post("http://210.245.108.202:9000/api/message/SendMessage_v2", dataMess);
+            console.log("gửi tin nhắn thành công")
+        }
+
     } catch (error) {
         return false;
     }

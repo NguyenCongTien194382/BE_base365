@@ -5,6 +5,7 @@ const history = require('./QuoteHistory')
 const Products = require('../../../models/crm/Products')
 const ProductUnit = require('../../../models/crm/ProductUnit')
 const Users = require('../../../models/Users')
+const Chance = require('../../../models/crm/Customer/customer_chance')
 
 // Hiện tại, mã báo giá quy ước đặt là "BG-XXXX", 
 // "BG-" cố định, "XXXX" là số
@@ -50,6 +51,7 @@ exports.create = async (req, res, next) => {
             tax_code,
             address,
             phone_number,
+            chance_id,
             introducer,
             product_list,
             discount_rate,
@@ -60,7 +62,8 @@ exports.create = async (req, res, next) => {
             creator_name,
             ceo_name,
             description,
-            use_system_info } = req.body;
+            use_system_info,
+            print_template_id } = req.body;
 
         let comId = 0, empId = 0;
 
@@ -98,6 +101,7 @@ exports.create = async (req, res, next) => {
                     tax_code: tax_code,
                     address: address,
                     phone_number: phone_number,
+                    chance_id: chance_id,
                     introducer: introducer,
                     product_list: productArray, // product_id, amount, product_discount_rate, product_discount_money, tax_rate, tax_money, product_total_money, 
                     discount_rate: discountRate,
@@ -109,6 +113,7 @@ exports.create = async (req, res, next) => {
                     ceo_name: ceo_name,
                     description: description,
                     use_system_info: Boolean(use_system_info),
+                    print_template_id: print_template_id,
 
                     user_created_id: empId,
                     user_updated_id: empId,
@@ -141,6 +146,7 @@ exports.list = async (req, res, next) => {
             date_quote_end,
             status,
             quote_code_str,
+            chance_id,
             page,
             perPage } = req.body;
 
@@ -164,13 +170,18 @@ exports.list = async (req, res, next) => {
                 $lte: dayjs(date_quote_end).endOf('day').toDate()
             }
             if (status) {
-                if (Number(status) && Number(status) != 0) {
+                if (Number(status) && Number(status) !== 0) {
                     conditions.status = Number(status)
                 }
             }
             if (quote_code_str) {
                 const quote_code_str_reg = RegExp(quote_code_str, 'i')
                 conditions.quote_code_str = { $regex: quote_code_str_reg }
+            }
+            if (chance_id) {
+                if (Number(chance_id)) {
+                    conditions.chance_id = Number(chance_id)
+                }
             }
 
             // const data = await Quote.find(conditions).sort({ updated_at: -1, date_quote_end: -1, date_quote: -1 })
@@ -402,6 +413,13 @@ exports.getDetail = async (req, res, next) => {
                         options: { lean: true },
                         select: 'userName avatarUser'
                     })
+                    .populate({
+                        path: 'chance_id',
+                        model: Chance,
+                        localField: 'chance_id',
+                        foreignField: 'id',
+                        options: {lean: true},
+                    })
 
                 // const newProductList = await Promise.all(data[0].product_list.map(async (productItem) => {
                 //     if (productItem.product_dvt_id && productItem.product_dvt_id != 0) {
@@ -440,6 +458,7 @@ exports.update = async (req, res, next) => {
             tax_code,
             address,
             phone_number,
+            chance_id,
             introducer,
             product_list,
             discount_rate,
@@ -450,7 +469,8 @@ exports.update = async (req, res, next) => {
             creator_name,
             ceo_name,
             description,
-            use_system_info } = req.body;
+            use_system_info,
+            print_template_id } = req.body;
 
         let comId = 0, empId = 0;
 
@@ -478,6 +498,7 @@ exports.update = async (req, res, next) => {
                 if (tax_code) update.tax_code = tax_code;
                 if (address) update.address = address;
                 if (phone_number) update.phone_number = phone_number;
+                if (chance_id) update.chance_id = chance_id;
                 if (introducer) update.introducer = introducer;
                 if (product_list) {
                     let productArray = []
@@ -504,6 +525,7 @@ exports.update = async (req, res, next) => {
                 if (ceo_name) update.ceo_name = ceo_name;
                 if (description) update.description = description;
                 if (use_system_info) update.use_system_info = Boolean(use_system_info);
+                if (print_template_id) update.print_template_id = print_template_id
 
                 await Quote.updateOne({ id: id, com_id: comId, is_delete: 0 }, { $set: update })
 

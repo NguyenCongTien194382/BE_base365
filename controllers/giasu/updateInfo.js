@@ -12,12 +12,13 @@ const GSLevelClass = require('../../models/GiaSu/GSLevelClass');
 const md5 = require('md5');
 const axios = require('axios');
 
-exports.updateInfoParent = async(req, res, next) => {
+exports.updateInfoParent = async (req, res, next) => {
     try {
         let idGiaSu = req.user.data.idGiaSu;
         let data = [];
         const { userName, emailContact, address, phone, birthday, gender, ugs_about_us, ugs_city, ugs_county } =
-        req.body;
+            req.body;
+        let password = req.body.password
         let File = req.files || null;
         let avatarUser = null;
         if (!userName) {
@@ -71,6 +72,7 @@ exports.updateInfoParent = async(req, res, next) => {
                     'inforGiaSu.ugs_about_us': ugs_about_us,
                     city: ugs_city,
                     district: ugs_county,
+                    password: password ? md5(password) : findUser.password,
                 },
             });
             return functions.success(res, 'cập nhật thành công');
@@ -82,7 +84,7 @@ exports.updateInfoParent = async(req, res, next) => {
         return functions.setError(res, error.message);
     }
 };
-exports.detailParent = async(req, res) => {
+exports.detailParent = async (req, res) => {
     try {
         let idGiaSu = req.user.data.idGiaSu;
         let user = await Users.aggregate([
@@ -135,7 +137,7 @@ exports.detailParent = async(req, res) => {
     }
 };
 
-exports.updateInfoTeacher = async(req, res, next) => {
+exports.updateInfoTeacher = async (req, res, next) => {
     try {
         const idGiaSu = req.user.data.idGiaSu;
         let data = [];
@@ -185,8 +187,9 @@ exports.updateInfoTeacher = async(req, res, next) => {
             tt5,
             tt6,
             tt7,
-            tcn,
+            tcn
         } = req.body;
+        let password = req.body.password
         let File = req.files || null;
         let avatarUser = null;
         const now = await functions.getTimeNow();
@@ -227,6 +230,7 @@ exports.updateInfoTeacher = async(req, res, next) => {
                     'inforGiaSu.ugs_about_us': ugs_about_us,
                     city: ugs_city_gs,
                     district: ugs_county_gs,
+                    password: password ? md5(password) : findUser.password,
                     'inforGiaSu.ugs_tutor_style': ugs_tutor_style,
                     'inforGiaSu.ugs_class_teach': ugs_class_teach,
                     'inforGiaSu.ugs_school': ugs_school,
@@ -283,7 +287,7 @@ exports.updateInfoTeacher = async(req, res, next) => {
     }
 };
 
-exports.detailTeach = async(req, res) => {
+exports.detailTeach = async (req, res) => {
     try {
         let idGiaSu = req.user.data.idGiaSu;
         let user = await Users.aggregate([
@@ -377,7 +381,7 @@ exports.detailTeach = async(req, res) => {
 };
 
 //đăng kí tài khoản cá nhân
-exports.register = async(req, res) => {
+exports.register = async (req, res) => {
     try {
         const {
             userName,
@@ -578,7 +582,7 @@ exports.register = async(req, res) => {
     }
 };
 
-exports.toolCrawDataSubject = async(req, res, next) => {
+exports.toolCrawDataSubject = async (req, res, next) => {
     try {
         let page = 1;
         let result = true;
@@ -618,7 +622,7 @@ exports.toolCrawDataSubject = async(req, res, next) => {
     }
 };
 
-exports.toolCrawDataTeachType = async(req, res, next) => {
+exports.toolCrawDataTeachType = async (req, res, next) => {
     try {
         let page = 1;
         let result = true;
@@ -651,7 +655,7 @@ exports.toolCrawDataTeachType = async(req, res, next) => {
         return functions.setError(res, error.message);
     }
 };
-exports.toolCrawDataGSLevelClass = async(req, res, next) => {
+exports.toolCrawDataGSLevelClass = async (req, res, next) => {
     try {
         let page = 1;
         let result = true;
@@ -695,7 +699,7 @@ exports.toolCrawDataGSLevelClass = async(req, res, next) => {
         return functions.setError(res, error.message);
     }
 };
-exports.toolCrawDataClassTeach = async(req, res, next) => {
+exports.toolCrawDataClassTeach = async (req, res, next) => {
     try {
         let page = 1;
         let result = true;
@@ -732,7 +736,7 @@ exports.toolCrawDataClassTeach = async(req, res, next) => {
 };
 
 //Hàm đăng nhập gia sư
-exports.login = async(req, res, next) => {
+exports.login = async (req, res, next) => {
     try {
         let request = req.body,
             account = request.account,
@@ -754,20 +758,20 @@ exports.login = async(req, res, next) => {
             if (user) {
                 let com_id = 0;
                 const token = await functions.createToken({
-                        _id: user._id,
-                        idTimViec365: user.idTimViec365,
-                        idQLC: user.idQLC,
-                        idGiaSu: user.idGiaSu,
-                        idRaoNhanh365: user.idRaoNhanh365,
-                        email: user.email,
-                        phoneTK: user.phoneTK,
-                        createdAt: user.createdAt,
-                        type: user.type,
-                        com_id: com_id,
-                        userName: user.userName,
-                        organizeDetailId: user.organizeDetailId || 0,
-                        isAdmin: user.isAdmin || 0,
-                    },
+                    _id: user._id,
+                    idTimViec365: user.idTimViec365,
+                    idQLC: user.idQLC,
+                    idGiaSu: user.idGiaSu,
+                    idRaoNhanh365: user.idRaoNhanh365,
+                    email: user.email,
+                    phoneTK: user.phoneTK,
+                    createdAt: user.createdAt,
+                    type: user.type,
+                    com_id: com_id,
+                    userName: user.userName,
+                    organizeDetailId: user.organizeDetailId || 0,
+                    isAdmin: user.isAdmin || 0,
+                },
                     '1d'
                 );
                 const refreshToken = await functions.createToken({ userId: user._id }, '1y');

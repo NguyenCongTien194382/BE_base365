@@ -87,6 +87,12 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    // nếu đkí từ site khác nhưng vẫn đăng nhập vào hungha thì login_web = 'quanlychung' để bắn về admin hungha
+    login_web: {
+        // đăng nhập vào hungha
+        type: String,
+        default: null
+    },
     fromDevice: {
         // Nguồn đăng ký từ thiết bị nào (tương đương trường "dk" của timviec365)
         type: Number,
@@ -897,6 +903,12 @@ const UserSchema = new mongoose.Schema({
             },
             // Thông tin công ty luồng chuyển đổi số
             cds: {
+
+                // 1: không cần lịch, 2:cần lịch, 3:cả 2
+                type_timesheet: {
+                    type: Number,
+                    default: 3
+                },
                 com_parent_id: {
                     type: Number,
                     default: null
@@ -1340,15 +1352,15 @@ const UserSchema = new mongoose.Schema({
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-UserSchema.pre('updateOne', function(next) {
+UserSchema.pre('updateOne', function (next) {
     next();
     UpdateElastic(this.getQuery());
 });
-UserSchema.pre('updateMany', function(next) {
+UserSchema.pre('updateMany', function (next) {
     next();
     UpdateElastic(this.getQuery());
 });
-UserSchema.pre('findOneAndUpdate', function(next) {
+UserSchema.pre('findOneAndUpdate', function (next) {
     next();
     UpdateElastic(this.getQuery());
 });
@@ -1385,7 +1397,7 @@ const handle = (str) => {
     let result = removeVietnameseTones(str.toLowerCase());
     return result;
 }
-const UpdateElastic = async(condition) => {
+const UpdateElastic = async (condition) => {
     try {
         await sleep(1000);
         let listUser = await Users.find(condition).lean();
@@ -1428,7 +1440,7 @@ const UpdateElastic = async(condition) => {
 }
 
 // save 
-const HandleSave = async(obj_save) => {
+const HandleSave = async (obj_save) => {
     try {
         let obj = obj_save;
         let cv_cate_id = "";
@@ -1467,13 +1479,13 @@ const HandleSave = async(obj_save) => {
         return false;
     }
 }
-UserSchema.pre('save', function(next) {
+UserSchema.pre('save', function (next) {
     next();
     HandleSave(this);
 });
 
 // delete 
-const HandleDelete = async(id) => {
+const HandleDelete = async (id) => {
     try {
         await axios({
             method: "post",
@@ -1489,11 +1501,11 @@ const HandleDelete = async(id) => {
         return false;
     }
 }
-UserSchema.pre('deleteOne', function(next) {
+UserSchema.pre('deleteOne', function (next) {
     HandleDelete(this.getQuery()["_id"]);
     next();
 });
-UserSchema.pre('deleteMany', function(next) {
+UserSchema.pre('deleteMany', function (next) {
     HandleDelete(this.getQuery()["_id"]);
     next();
 });

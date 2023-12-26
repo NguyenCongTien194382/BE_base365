@@ -14,5 +14,8 @@ router.post('/takeListNvienKinhDoanh', funtions.checkToken, formData.parse(), co
 router.post('/TakeListGroupOfUser', formData.parse(), controllers.TakeListGroupOfUser);
 router.post('/addUserToCrm', formData.parse(), controllers.addUserToCrm);
 router.post('/updateVip', formData.parse(), controllers.updateVip);
-
+router.get('/takeDuLieuChuyenGio', controllers.takeDuLieuChuyenGio);
+router.post('/takeListCustomer', funtions.checkToken, formData.parse(), controllers.takeListCustomer);
+router.post('/ShowDulieuKhachHangKinhDoanh', formData.parse(), controllers.ShowDulieuKhachHangKinhDoanh);
+router.post('/TakeListUserFromGroupNoToken', formData.parse(), controllers.TakeListUserFromGroupNoToken);
 module.exports = router;

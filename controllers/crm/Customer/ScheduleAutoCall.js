@@ -452,8 +452,13 @@ exports.getListGroupCompany = async (req, res) => {
     }
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+};
+
 exports.handle_auto_call = async () => {
     try {
+        console.log('Auto Call')
         const time_now = Date.now() / 1000
         const list_schedule = await ScheduleAutoCall.find({ time_start: { $lt: time_now }, status: 2, status_run: 0 }, { _id: 1, list_cus_id: 1 }).lean()
         await ScheduleAutoCall.updateMany({ time_start: { $lt: time_now }, status: 2, status_run: 0 }, { status_run: 1 })
@@ -462,6 +467,7 @@ exports.handle_auto_call = async () => {
             await ScheduleAutoCall.updateOne({ _id: list_schedule[i]._id }, { status_doing: 'Đang chạy' })
             for (let j = 0; j < list_customer.length; j++) {
                 if (list_customer[j].phone_number && list_customer.phone_number !== '') {
+                    console.log(list_customer[j].cus_id)
                     //bắt lỗi ko để chết vòng lặp
                     try {
                         let config = {
@@ -477,6 +483,7 @@ exports.handle_auto_call = async () => {
                             },
                         };
                         await axios.request(config);
+                        await sleep(30000);
                     } catch (e) {
                         console.log(e)
                     }

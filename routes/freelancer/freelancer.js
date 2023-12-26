@@ -30,5 +30,7 @@ router.post('/changePassword', functions.checkToken, flcService.checkFreelancer,
 router.post('/datGia', functions.checkToken, flcService.checkFreelancer, formData.parse(), freelancer.datGia);
 router.post('/hideSearch', functions.checkToken, flcService.checkFreelancer, formData.parse(), freelancer.hideSearch);
 router.post('/updateAvatarAfterLogin', functions.checkToken, flcService.checkFreelancer, formData.parse(), freelancer.updateAvatarAfterLogin);
+router.post('/refreshInfo', functions.checkToken, flcService.checkFreelancer, formData.parse(), freelancer.refreshInfo);
+router.post('/hosonangluc', functions.checkToken, flcService.checkFreelancer, formData.parse(), freelancer.hosonangluc);
 
 module.exports = router;

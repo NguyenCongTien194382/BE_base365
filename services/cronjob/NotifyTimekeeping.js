@@ -65,9 +65,10 @@ exports.get_time_shift = async () => {
                 let shift_id = e.shift_id
                 let com_id = e.com_id
                 let start_time = e.start_time_latest || e.start_time
-                let end_time = e.end_time || e.end_time_latest
+                let end_time = e.end_time || e.end_time_latest || ""
                 const notify = list_data.find(item => item.com_id == e.com_id)
-
+                let check_end = true
+                if (!end_time) check_end = false
 
                 const jobTime_start = { hour: Number(start_time.split(":")[0]), minute: Number(start_time.split(":")[1]) - notify.minute - 2, dayOfWeek: [0, 1, 2, 3, 4, 5, 6] };
                 const jobTime_end = { hour: Number(end_time.split(":")[0]), minute: Number(end_time.split(":")[1]) - notify.minute - 2, dayOfWeek: [0, 1, 2, 3, 4, 5, 6] };
@@ -174,78 +175,80 @@ exports.get_time_shift = async () => {
                 )
 
                 // thông báo ra ca
-                schedule.scheduleJob(`${e.shift_id}-1`, jobTime_end, async () => {
 
-                    const date = new Date()
+                if (check_end)
+                    schedule.scheduleJob(`${e.shift_id}-1`, jobTime_end, async () => {
+
+                        const date = new Date()
 
 
-                    let list_cycle = await Cycle.find({
+                        let list_cycle = await Cycle.find({
 
-                        com_id: e.com_id
+                            com_id: e.com_id
 
-                    }).lean()
-                    list_cycle = list_cycle.filter(item =>
-                        new Date(item.apply_month).getMonth() == date.getMonth() &&
-                        new Date(item.apply_month).getFullYear() == date.getFullYear()
-                    )
-                    let list_cycle_final = []
-                    list_cycle.map(item => {
-                        let cy_detail = JSON.parse(item.cy_detail)
-                        let find_shift = cy_detail.find(item_cy_detail =>
-                            new Date(item_cy_detail.date).getDate() == date.getDate() &&
-                            new Date(item_cy_detail.date).getMonth() == date.getMonth() &&
-                            new Date(item_cy_detail.date).getFullYear() == date.getFullYear()
-                            && item_cy_detail.shift_id.split(",").map(item_shift => Number(item_shift)).includes(shift_id)
+                        }).lean()
+                        list_cycle = list_cycle.filter(item =>
+                            new Date(item.apply_month).getMonth() == date.getMonth() &&
+                            new Date(item.apply_month).getFullYear() == date.getFullYear()
                         )
-                        if (find_shift) list_cycle_final.push(Number(item.cy_id))
-                    })
-                    const list_employeCycle = await EmployeCycle.find(
-                        {
-                            cy_id: {
-                                $in: list_cycle_final
-                            }
-                        },
-                        {
-                            ep_id: 1
-                        }
-                    ).lean()
-                    const list_ep_id = []
-                    list_employeCycle.map(item_ecy => list_ep_id.push(Number(item_ecy.ep_id)))
-
-
-                    const list_ep_idChat = []
-                    const list_user = await Users.find(
-                        {
-                            idQLC: {
-                                $in: list_ep_id
-                            },
-                            type: 2
-                        },
-                        {
-                            _id: 1
-                        }
-                    )
-                    list_user.map(item_user => list_ep_idChat.push(item_user._id))
-                    const info_company = await Users.findOne({
-                        idQLC: com_id,
-                        type: 1
-                    })
-                    let idChat_company = info_company ? info_company._id : 0
-
-                    await axios.post(
-                        'http://210.245.108.202:9000/api/V2/Notification/SendNotiListUser',
-                        {
-                            list_id_user: list_ep_idChat,
-                            message: notify.content || "",
-                            sender_id: idChat_company || 10016237
-
-                        },
-                        {
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
+                        let list_cycle_final = []
+                        list_cycle.map(item => {
+                            let cy_detail = JSON.parse(item.cy_detail)
+                            let find_shift = cy_detail.find(item_cy_detail =>
+                                new Date(item_cy_detail.date).getDate() == date.getDate() &&
+                                new Date(item_cy_detail.date).getMonth() == date.getMonth() &&
+                                new Date(item_cy_detail.date).getFullYear() == date.getFullYear()
+                                && item_cy_detail.shift_id.split(",").map(item_shift => Number(item_shift)).includes(shift_id)
+                            )
+                            if (find_shift) list_cycle_final.push(Number(item.cy_id))
                         })
-                })
+                        const list_employeCycle = await EmployeCycle.find(
+                            {
+                                cy_id: {
+                                    $in: list_cycle_final
+                                }
+                            },
+                            {
+                                ep_id: 1
+                            }
+                        ).lean()
+                        const list_ep_id = []
+                        list_employeCycle.map(item_ecy => list_ep_id.push(Number(item_ecy.ep_id)))
+
+
+                        const list_ep_idChat = []
+                        const list_user = await Users.find(
+                            {
+                                idQLC: {
+                                    $in: list_ep_id
+                                },
+                                type: 2
+                            },
+                            {
+                                _id: 1
+                            }
+                        )
+                        list_user.map(item_user => list_ep_idChat.push(item_user._id))
+                        const info_company = await Users.findOne({
+                            idQLC: com_id,
+                            type: 1
+                        })
+                        let idChat_company = info_company ? info_company._id : 0
+
+                        await axios.post(
+                            'http://210.245.108.202:9000/api/V2/Notification/SendNotiListUser',
+                            {
+                                list_id_user: list_ep_idChat,
+                                message: notify.content || "",
+                                sender_id: idChat_company || 10016237
+
+                            },
+                            {
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                            })
+                    })
 
             })
 

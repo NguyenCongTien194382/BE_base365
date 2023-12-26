@@ -8,6 +8,7 @@ const Location = require('../../models/qlc/Location')
 const Wifi = require('../../models/qlc/TrackingWifi')
 const SettingWifi = require('../../models/qlc/SettingWifi')
 const Users = require('../../models/Users')
+const TimeSheets = require('../../models/qlc/TimeSheets')
 
 exports.addSetting = async (req, res) => {
   try {
@@ -32,8 +33,8 @@ exports.addSetting = async (req, res) => {
       } = req.body
       if (type_wifi == 2 || type_wifi == 3) list_wifi = []
       if (type_loc == 2 || type_loc == 3) list_loc = []
-      console.log(new Date('2023-10-10'))
-      console.log(start_time)
+
+
       // let tempShift = []
 
       // lay max id
@@ -323,7 +324,7 @@ exports.editSetting = async (req, res) => {
             }
           }
           // check cho bên FE
-          console.log("list_loc sau", list_loc)
+
           const updateRes = await SettingTimesheet.updateOne(
             { setting_id: Number(setting_id) },
             {
