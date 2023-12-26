@@ -626,8 +626,8 @@ exports.listPotential = async (req, res) => {
       listPotential
     );
     return functions.success(res, "get list potential success:", {
-      total: total - data[0],
-      data: data[1],
+      total: total,
+      data: listPotential,
     });
   } catch (err) {
     return functions.setError(res, err.message);
@@ -684,7 +684,7 @@ exports.addPotentialFromFile = async (req, res) => {
     return res.status(400).send("No file uploaded.");
   }
 
-  const { type = 1, is_update_empty = false, emp_id = 0 } = req.body;
+  const { type = 1, is_update_empty = "false", emp_id = 0 } = req.body;
 
   const getIdCity = (value) => {
     return LIST_CITY.filter((item) => item.label === value)?.[0]?.value || null;
@@ -749,11 +749,17 @@ exports.addPotentialFromFile = async (req, res) => {
           let listEmp = [];
           if (!emp_id) {
             listEmp = await Users.find(
-              { userName: item?.["Nhân viên phụ trách"] },
-              { idQLC: 1, _id: 0, userName: 1 }
+              {
+                userName: item?.["Nhân viên phụ trách"],
+                idQLC: { $ne: 0 },
+                type: { $ne: 0 },
+              },
+              { _id: 0 }
             ).lean();
           }
           return {
+            company_id: req.user.data.com_id,
+            type: 3,
             email: item?.["Email cá nhân"] || null,
             phone_number: item?.["Điện thoại cá nhân"] || null,
             address: item?.["Địa chỉ"] || null,
@@ -771,7 +777,7 @@ exports.addPotentialFromFile = async (req, res) => {
                 (el) => el?.label === item?.["Nguồn gốc"]
               )[0]?.value || 0,
             emp_id: emp_id
-              ? emp_id
+              ? Number(emp_id)
               : listEmp?.filter(
                   (item) => item?.userName === item?.["Nhân viên phụ trách"]
                 )[0]?.userName || null,
@@ -804,7 +810,7 @@ exports.addPotentialFromFile = async (req, res) => {
         await Promise.all(newDataCus);
       } else if (type == 2) {
         // Update
-        if (is_update_empty == true) {
+        if (is_update_empty == "true") {
           const newDataPotential = result[0]?.data?.map((item, i) => {
             return Potential.findOneAndUpdate(
               { potential_id: Number(item?.["Mã tiềm năng"]) },
@@ -872,7 +878,7 @@ exports.addPotentialFromFile = async (req, res) => {
         }
       } else if (type == 3) {
         // Both
-        if (is_update_empty == true) {
+        if (is_update_empty == "true") {
           const newDataPotential = result[0]?.data?.map((item, i) => {
             return {
               updateOne: {
