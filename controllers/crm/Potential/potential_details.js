@@ -1234,7 +1234,66 @@ exports.showDetailPotential = async (req, res) => {
         .find({
           id_action: Number(cus_id),
         })
-        .sort({ create_at: -1 });
+        .sort({ create_at: -1 })
+        .populate({
+          path: "emp_id",
+          model: Users,
+          options: {
+            lean: true,
+            select: "userName",
+            match: {
+              $and: [
+                { idQLC: { $ne: 0 } },
+                { idQLC: { $ne: 1 } },
+                { type: { $ne: 0 } },
+              ],
+            },
+          },
+          localField: "emp_id",
+          foreignField: "idQLC",
+        });
+
+      const populateOptions = [
+        {
+          path: "potential_id",
+          model: "CRM_potential",
+          options: { lean: true },
+          localField: "potential_id",
+          foreignField: "potential_id",
+        },
+        {
+          path: "emp_id",
+          model: Users,
+          options: {
+            lean: true,
+            select: "userName",
+            match: {
+              $and: [
+                { idQLC: { $ne: 0 } },
+                { idQLC: { $ne: 1 } },
+                { type: { $ne: 0 } },
+              ],
+            },
+          },
+          localField: "emp_id",
+          foreignField: "idQLC",
+        },
+        {
+          path: "user_edit_id",
+          model: Users,
+          options: {
+            lean: true,
+            select: "userName",
+            match: {
+              $and: [
+                { idQLC: { $ne: 0 } },
+                { idQLC: { $ne: 1 } },
+                { type: { $ne: 0 } },
+              ],
+            },
+          },
+        },
+      ];
 
       const dataPotential = await Customer.findOne(
         {
@@ -1251,22 +1310,16 @@ exports.showDetailPotential = async (req, res) => {
           cmnd_ccnd_time: 0,
           cmnd_ccnd_number: 0,
         }
-      )
-        .populate({
-          path: "potential_id",
-          model: "CRM_potential",
-          options: { lean: true },
-          localField: "potential_id",
-          foreignField: "potential_id",
-        })
-        .populate({
-          path: "emp_id",
-          model: Users,
-          options: { lean: true },
-          localField: "emp_id",
-          select: "userName",
-          foreignField: "idQLC",
-        });
+      );
+
+      if (dataPotential) {
+        await Promise.all(
+          populateOptions.map(async (option) => {
+            await Customer.populate(dataPotential, option);
+          })
+        );
+      }
+
       return functions.success(res, "get data success", {
         data: dataPotential,
         history,

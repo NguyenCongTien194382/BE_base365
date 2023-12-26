@@ -9,81 +9,112 @@ const Department = require("../../models/qlc/Deparment");
 
 exports.listCampaign = async (req, res) => {
   try {
-    let com_id = req.user.data.com_id;
-    let { page, pageSize, fromDate, toDate, keyword, status, empID } = req.body;
-    if (!page) page = 1;
-    if (!pageSize) pageSize = 10;
+    const { com_id } = req.user.data;
+    let {
+      page = 1,
+      pageSize = 10,
+      fromDate,
+      toDate,
+      keyword,
+      status,
+      empID,
+      cus_id,
+    } = req.body;
+
     page = Number(page);
     pageSize = Number(pageSize);
     const skip = (page - 1) * pageSize;
 
     let condition = { companyID: com_id, is_delete: 0, $or: [] };
+
     if (keyword) {
-      condition.$or.push({ nameCampaign: new RegExp(keyword, "i") });
       if (typeof Number(keyword) === "number" && !isNaN(Number(keyword))) {
         condition.$or.push({ _id: Number(keyword) });
+      } else {
+        condition.$or.push({ nameCampaign: new RegExp(keyword, "i") });
       }
     } else {
       condition.$or.push({});
     }
-    // tu ngay den ngay
-    fromDate = functions.convertTimestamp(fromDate);
-    toDate = functions.convertTimestamp(toDate);
-    if (fromDate && !toDate) condition.createdAt = { $gte: fromDate };
-    if (toDate && !fromDate) condition.createdAt = { $lte: toDate };
-    if (toDate && fromDate)
-      condition.createdAt = { $gte: fromDate, $lte: toDate };
+
+    if (fromDate || toDate) {
+      condition.createdAt = {
+        ...(fromDate && { $gte: functions.convertTimestamp(fromDate) }),
+        ...(toDate && { $lte: functions.convertTimestamp(toDate) }),
+      };
+    }
 
     if (status) condition.status = Number(status);
     if (empID) condition.empID = Number(empID);
-    // if (nameCampaign) condition.nameCampaign = new RegExp(nameCampaign, "i");
 
-    let listCampaign = await Campaign.aggregate([
-      { $match: condition },
-      { $sort: { updatedAt: -1 } },
-      { $skip: skip },
-      { $limit: pageSize },
-      {
-        $lookup: {
-          from: "Users",
-          localField: "empID",
-          foreignField: "idQLC",
-          pipeline: [{ $match: { idQLC: { $nin: [0, null] }, type: 2 } }],
-          as: "Employee",
+    let [listCampaign, total] = await Promise.all([
+      Campaign.aggregate([
+        { $match: condition },
+        { $sort: { updatedAt: -1 } },
+        { $skip: skip },
+        { $limit: pageSize },
+        {
+          $lookup: {
+            from: "Users",
+            localField: "empID",
+            foreignField: "idQLC",
+            pipeline: [{ $match: { idQLC: { $nin: [0, null] }, type: 2 } }],
+            as: "Employee",
+          },
         },
-      },
-      { $unwind: { path: "$Employee", preserveNullAndEmptyArrays: true } },
-      {
-        $project: {
-          _id: "$_id",
-          groupID: "$groupID",
-          nameCampaign: "$nameCampaign",
-          status: "$status",
-          typeCampaign: "$typeCampaign",
-          timeStart: "$timeStart",
-          timeEnd: "$timeEnd",
-          money: "$money",
-          expectedSales: "$expectedSales",
-          chanelCampaign: "$chanelCampaign",
-          investment: "$investment",
-          empID: "$empID",
-          shareAll: "$shareAll",
-          companyID: "$companyID",
-          countEmail: "$countEmail",
-          description: "$description",
-          type: "$type",
-          userIdCreate: "$userIdCreate",
-          userIdUpdate: "$userIdUpdate",
-          site: "$site",
-          isDelete: "$isDelete",
-          hidden_null: "$hidden_null",
-          createdAt: "$createdAt",
-          updatedAt: "$updatedAt",
-          name_emp: "$Employee.userName",
+        { $unwind: { path: "$Employee", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            _id: "$_id",
+            groupID: "$groupID",
+            nameCampaign: "$nameCampaign",
+            status: "$status",
+            typeCampaign: "$typeCampaign",
+            timeStart: "$timeStart",
+            timeEnd: "$timeEnd",
+            money: "$money",
+            expectedSales: "$expectedSales",
+            chanelCampaign: "$chanelCampaign",
+            investment: "$investment",
+            empID: "$empID",
+            shareAll: "$shareAll",
+            companyID: "$companyID",
+            countEmail: "$countEmail",
+            description: "$description",
+            type: "$type",
+            userIdCreate: "$userIdCreate",
+            userIdUpdate: "$userIdUpdate",
+            site: "$site",
+            isDelete: "$isDelete",
+            hidden_null: "$hidden_null",
+            createdAt: "$createdAt",
+            updatedAt: "$updatedAt",
+            name_emp: "$Employee.userName",
+          },
         },
-      },
+      ]),
+      Campaign.countDocuments(condition),
     ]);
-    let total = await functions.findCount(Campaign, condition);
+
+    if (cus_id) {
+      const result = await CustomerCampaign.find({
+        cus_id: Number(cus_id),
+      });
+
+      const totalCam = await CustomerCampaign.countDocuments({
+        cus_id: Number(cus_id),
+      });
+
+      const filteredArrayB = listCampaign.filter((itemB) =>
+        result.some((itemA) => itemA.campaign_id === itemB._id)
+      );
+
+      return functions.success(res, "get list campaign success:", {
+        total: totalCam,
+        data: filteredArrayB,
+      });
+    }
+
     return functions.success(res, "get list campaign success:", {
       total,
       data: listCampaign,
